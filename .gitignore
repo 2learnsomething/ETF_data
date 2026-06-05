@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# 环境
+.env
+.venv/
+venv/
+
+# 日志
+logs/
+*.log
+
+# 报告
+reports/
+
+# 本地数据
+Data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Hermes plans
+.hermes/plans/

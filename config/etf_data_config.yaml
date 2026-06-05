@@ -1,0 +1,28 @@
+# ============================================================
+# ETF_data — 统一配置文件
+# ============================================================
+
+# ── 数据库 ──────────────────────────────────────────────────
+database:
+  tushare:
+    server: "${DB_SERVER}"
+    port: ${DB_PORT}
+    database: "Tushare"
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
+    driver: "ODBC Driver 18 for SQL Server"
+    trust_server_cert: true
+    timeout: 30
+
+# 引用 tushare.yaml 的 API 配置
+tushare_api:
+  token: "${TUSHARE_TOKEN}"
+  http_url: "${TUSHARE_HTTP_URL}"
+  rate_limit:
+    delay: 0.5
+    single_symbol_delay: 0.3
+    batch_delay: 1.0
+
+# ── 通知推送 ────────────────────────────────────────────────
+notify:
+  sendkey: "${SENDKEY}"         # ServerChan sendkey

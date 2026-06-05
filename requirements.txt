@@ -1,0 +1,32 @@
+# ============================================================
+# ETF_data — Python 依赖
+# 安装: pip install -r requirements.txt
+# ============================================================
+
+# ── 核心 ──
+pandas>=2.0
+numpy>=1.24
+python-dateutil
+
+# ── 数据源 ──
+akshare>=1.14          # 新浪/同花顺/上证所 数据
+tushare>=1.4           # Tushare Pro (日线/净值/复权/持仓)
+baostock>=0.8.8        # 证券宝（可选，股票日线）
+
+# ── 网络 ──
+requests>=2.31
+urllib3>=2.0
+
+# ── 配置 ──
+pyyaml>=6.0
+python-dotenv>=1.0
+
+# ── 存储 ──
+pyodbc>=5.0            # SQL Server ODBC
+
+# ── 工具 ──
+tqdm>=4.66
+tabulate>=0.9
+
+# ── 测试 ──
+pytest>=8.0

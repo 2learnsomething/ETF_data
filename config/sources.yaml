@@ -1,0 +1,111 @@
+# ============================================================
+# ETF 数据源配置 — 行情 / 基本面 / 实时
+# ============================================================
+# 分层:
+#   Tier 1: 免费 + 稳定 (已验证)
+#   Tier 2: 免费有限制 / 需注册
+#   Tier 3: 付费
+# ============================================================
+
+sources:
+
+  # ── Tier 1: 已验证可用的免费源 ──────────────────────
+  tier1:
+
+    - name: Tushare Pro
+      type: python_lib + http_api
+      url: https://tushare.pro
+      tier: 1
+      capabilities:
+        - ETF 日线 (fund_daily)
+        - ETF 净值 (fund_nav)
+        - ETF 复权因子 (fund_adj)
+        - ETF 份额 (fund_share)
+        - ETF 基本信息 (fund_basic)
+        - ETF 持仓明细 (fund_portfolio)
+        - 涨跌停 (stk_limit)
+        - 指数日线 (index_daily)
+        - 交易日历 (trade_cal)
+      rate_limit: 200积分/min (免费)
+      auth: 需注册 token
+      status: 主力源，服务器不稳需超时60s
+
+    - name: 新浪财经 (Sina)
+      type: http_api + akshare
+      base_url: https://money.finance.sina.com.cn
+      tier: 1
+      capabilities:
+        - ETF 日K线 (fund_etf_hist_sina)
+        - ETF 实时行情 (hq.sinajs.cn)
+        - ETF 分类列表 (fund_etf_category_sina)
+        - ETF 分红记录 (fund_etf_dividend_sina)
+      rate_limit: 中等
+      auth: none
+      status: 验证源，与Tushare日线一致性>99%
+
+    - name: 腾讯财经 (Tencent)
+      type: http_api
+      base_url: https://web.ifzq.gtimg.cn
+      tier: 1
+      capabilities:
+        - ETF 日K线 (前复权)
+        - ETF 分时数据 (当日)
+      rate_limit: 宽松
+      auth: none
+      status: 第三验证源，价格差异约5.5%
+
+    - name: 同花顺
+      type: akshare
+      capabilities:
+        - ETF 实时净值行情 (fund_etf_spot_ths)
+        - ETF 分类 (fund_etf_category_ths)
+      auth: none
+      status: 同花顺估值数据写入SQL Server
+
+    - name: 上证所
+      type: akshare
+      capabilities:
+        - ETF 场内规模 (fund_etf_scale_sse)
+      auth: none
+      status: 593只ETF规模数据写入SQL Server
+
+  # ── Tier 2: 需安装/注册 ─────────────────────────────
+  tier2:
+
+    - name: Baostock
+      type: python_lib
+      capabilities:
+        - 股票日K线
+        - 股票分钟K线
+      auth: 免费注册
+      status: A股股票支持好，ETF返回0行
+
+    - name: 聚宽 (JoinQuant)
+      type: jqdatasdk
+      capabilities:
+        - ETF 日K线
+        - ETF 分钟K线
+      auth: 免费100万条/天
+      status: 未测试
+
+    - name: 掘金 (GMQ)
+      type: python_sdk
+      capabilities:
+        - ETF tick
+        - ETF 分钟K线
+      auth: 免费有限制
+      status: 未测试
+
+    - name: efinance
+      type: python_lib
+      capabilities:
+        - ETF 日K线 (东方财富封装)
+      auth: none
+      status: 当前网络不可达(DNS)
+
+  # ── Tier 3: 付费 ────────────────────────────────────
+  tier3:
+    - name: Wind (万得)
+    - name: Choice (东方财富)
+    - name: QMT (迅投)
+    - name: XTP (中泰证券)

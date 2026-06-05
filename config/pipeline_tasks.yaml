@@ -1,0 +1,415 @@
+tasks:
+- name: trade_calendar
+  source: tushare
+  data_type: trade_cal
+  symbols: []
+  start_date: '20150101'
+  extra:
+    exchange: SSE
+  retry: 2
+  retry_delay: 5
+  validate:
+    required:
+    - date
+    - is_open
+    dedup_keys:
+    - date
+  completeness:
+    check_gaps: true
+  target:
+    type: sqlserver
+    table: trade_calendar
+    if_exists: replace
+    keys:
+    - date
+- name: etf_basic
+  source: tushare
+  data_type: etf_basic
+  symbols: []
+  extra:
+    list_status: L
+  retry: 2
+  retry_delay: 5
+  validate:
+    required:
+    - symbol
+    - csname
+    dedup_keys:
+    - symbol
+  completeness:
+    check_gaps: false
+  target:
+    type: sqlserver
+    table: etf_basic
+    if_exists: replace
+    keys:
+    - symbol
+- name: etf_daily
+  source: tushare
+  data_type: fund_daily
+  symbols:
+  # 宽基
+  - 510050.SH   # 上证50
+  - 510300.SH   # 沪深300
+  - 510500.SH   # 中证500
+  - 510310.SH   # 沪深300ETF易方达
+  - 159919.SZ   # 沪深300ETF
+  - 159915.SZ   # 创业板
+  - 159845.SZ   # 中证1000
+  - 588000.SH   # 科创50
+  - 588080.SH   # 科创50ETF
+  # 行业
+  - 512880.SH   # 证券
+  - 512100.SH   # 医药
+  - 512010.SH   # 消费
+  - 512690.SH   # 酒
+  - 512800.SH   # 银行
+  - 512660.SH   # 军工
+  - 512170.SH   # 医疗
+  - 159995.SZ   # 芯片
+  - 516510.SH   # 云计算
+  - 516160.SH   # 新能源
+  # 债券
+  - 511010.SH   # 国债
+  - 511260.SH   # 10年国债
+  - 511380.SH   # 可转债
+  # 商品
+  - 518880.SH   # 黄金
+  - 159980.SZ   # 有色
+  # 跨境
+  - 513100.SH   # 纳指
+  - 159920.SZ   # 恒生
+  - 513050.SH   # 中概互联
+  - 159941.SZ   # 纳指ETF
+  # 货币
+  - 511880.SH   # 银华日利
+  - 510880.SH   # 红利
+  start_date: '20150101'
+  incremental: true
+  lookback_days: 5
+  retry: 3
+  retry_delay: 10
+  validate: daily
+  completeness:
+    check_gaps: true
+    pct_change_col: pct_chg
+    gap_threshold: 0.11
+  target:
+    type: sqlserver
+    table: etf_daily
+    if_exists: append
+    keys:
+    - symbol
+    - date
+- name: etf_adj_factor
+  source: tushare
+  data_type: fund_adj
+  symbols:
+  - 510050.SH
+  - 510300.SH
+  - 510500.SH
+  - 510310.SH
+  - 159919.SZ
+  - 159915.SZ
+  - 159845.SZ
+  - 588000.SH
+  - 588080.SH
+  - 512880.SH
+  - 512100.SH
+  - 512010.SH
+  - 512690.SH
+  - 512800.SH
+  - 512660.SH
+  - 512170.SH
+  - 159995.SZ
+  - 516510.SH
+  - 516160.SH
+  - 511010.SH
+  - 511260.SH
+  - 511380.SH
+  - 518880.SH
+  - 159980.SZ
+  - 513100.SH
+  - 159920.SZ
+  - 513050.SH
+  - 159941.SZ
+  - 511880.SH
+  - 510880.SH
+  start_date: '20150101'
+  incremental: true
+  lookback_days: 30
+  retry: 3
+  retry_delay: 10
+  validate:
+    required:
+    - symbol
+    - date
+    dedup_keys:
+    - symbol
+    - date
+  completeness:
+    check_gaps: false
+  target:
+    type: sqlserver
+    table: etf_adj_factor
+    if_exists: append
+    keys:
+    - symbol
+    - date
+- name: etf_share
+  source: tushare
+  data_type: fund_share
+  symbols:
+  - 510050.SH
+  - 510300.SH
+  - 510500.SH
+  - 510310.SH
+  - 159919.SZ
+  - 159915.SZ
+  - 159845.SZ
+  - 588000.SH
+  - 588080.SH
+  - 512880.SH
+  - 512100.SH
+  - 512010.SH
+  - 512690.SH
+  - 512800.SH
+  - 512660.SH
+  - 512170.SH
+  - 159995.SZ
+  - 516510.SH
+  - 516160.SH
+  - 511010.SH
+  - 511260.SH
+  - 511380.SH
+  - 518880.SH
+  - 159980.SZ
+  - 513100.SH
+  - 159920.SZ
+  - 513050.SH
+  - 159941.SZ
+  - 511880.SH
+  - 510880.SH
+  start_date: '20150101'
+  incremental: true
+  lookback_days: 30
+  retry: 3
+  retry_delay: 10
+  validate:
+    required:
+    - symbol
+    - date
+    dedup_keys:
+    - symbol
+    - date
+  completeness:
+    check_gaps: false
+  target:
+    type: sqlserver
+    table: etf_share
+    if_exists: append
+    keys:
+    - symbol
+    - date
+- name: etf_nav
+  source: tushare
+  data_type: fund_nav
+  symbols:
+  - 510050.SH
+  - 510300.SH
+  - 510500.SH
+  - 510310.SH
+  - 159919.SZ
+  - 159915.SZ
+  - 159845.SZ
+  - 588000.SH
+  - 588080.SH
+  - 512880.SH
+  - 512100.SH
+  - 512010.SH
+  - 512690.SH
+  - 512800.SH
+  - 512660.SH
+  - 512170.SH
+  - 159995.SZ
+  - 516510.SH
+  - 516160.SH
+  - 511010.SH
+  - 511260.SH
+  - 511380.SH
+  - 518880.SH
+  - 159980.SZ
+  - 513100.SH
+  - 159920.SZ
+  - 513050.SH
+  - 159941.SZ
+  - 511880.SH
+  - 510880.SH
+  start_date: '20150101'
+  incremental: true
+  lookback_days: 30
+  retry: 3
+  retry_delay: 10
+  validate:
+    required:
+    - symbol
+    - date
+    dedup_keys:
+    - symbol
+    - date
+  completeness:
+    check_gaps: false
+  target:
+    type: sqlserver
+    table: etf_nav
+    if_exists: append
+    keys:
+    - symbol
+    - date
+- name: index_daily
+  source: tushare
+  data_type: index_daily
+  symbols:
+  - 000001.SH
+  - 000300.SH
+  - 000905.SH
+  - 000852.SH
+  - 399001.SZ
+  - 399006.SZ
+  - 000016.SH
+  - 000688.SH
+  start_date: '20150101'
+  incremental: true
+  lookback_days: 5
+  retry: 3
+  retry_delay: 10
+  validate:
+    required:
+    - symbol
+    - date
+    - close
+    dedup_keys:
+    - symbol
+    - date
+    ranges:
+      close:
+      - 0.001
+      - null
+      volume:
+      - 0
+      - null
+  completeness:
+    check_gaps: true
+    pct_change_col: pct_chg
+    gap_threshold: 0.11
+  target:
+    type: sqlserver
+    table: index_daily
+    if_exists: append
+    keys:
+    - symbol
+    - date
+# ── 新数据源 ─────────────────────────────────────────
+- name: etf_minute
+  source: tencent
+  data_type: etf_minute
+  symbols:
+  - 510050.SH
+  - 510300.SH
+  - 159915.SZ
+  - 512880.SH
+  - 518880.SH
+  retry: 1
+  validate:
+    required: []
+    dedup_keys: []
+  target:
+    type: sqlserver
+    table: etf_minute
+    if_exists: replace
+- name: etf_spot_ths
+  source: akshare_extra
+  data_type: etf_spot_ths
+  symbols: []
+  incremental: true
+  retry: 1
+  validate:
+    required: []
+    dedup_keys: []
+  target:
+    type: sqlserver
+    table: etf_spot_ths
+    if_exists: replace
+- name: etf_scale_sse
+  source: akshare_extra
+  data_type: etf_scale_sse
+  symbols: []
+  incremental: true
+  retry: 1
+  validate:
+    required: []
+    dedup_keys: []
+  target:
+    type: sqlserver
+    table: etf_scale_sse
+    if_exists: replace
+- name: fund_portfolio
+  source: tushare
+  data_type: fund_portfolio
+  symbols:
+  - 510050.SH
+  - 510300.SH
+  - 510500.SH
+  - 159919.SZ
+  - 159915.SZ
+  - 588000.SH
+  start_date: '20240101'
+  incremental: true
+  lookback_days: 90
+  retry: 3
+  retry_delay: 10
+  # 注意: fund_portfolio 返回 ts_code(基金) + symbol(持仓股票),
+  # 需要 transform 避免 normalize_columns 把 ts_code→symbol 冲突
+  transform:
+  - action: rename
+    mapping:
+      ts_code: fund_code
+      end_date: date
+  validate:
+    required:
+    - fund_code
+    - date
+    dedup_keys:
+    - fund_code
+    - date
+    - symbol
+  target:
+    type: sqlserver
+    table: fund_portfolio
+    if_exists: append
+    keys:
+    - fund_code
+    - date
+    - symbol
+- name: stk_limit
+  source: tushare
+  data_type: stk_limit
+  symbols: []
+  start_date: '20240101'
+  incremental: true
+  lookback_days: 5
+  retry: 1
+  validate:
+    required:
+    - date
+    - symbol
+    dedup_keys:
+    - date
+    - symbol
+  target:
+    type: sqlserver
+    table: stk_limit
+    if_exists: append
+    keys:
+    - date
+    - symbol

@@ -1,0 +1,4 @@
+# Tushare API 配置 (token 从 .env 注入)
+tushare:
+  token: "${TUSHARE_TOKEN}"
+  http_url: "${TUSHARE_HTTP_URL}"
