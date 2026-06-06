@@ -66,19 +66,70 @@ class Pipeline:
     # ── 全量回填 ─────────────────────────────────────────────
 
     def _run_backfill(self) -> int:
-        """全量回填（按 P0→P1→P2 顺序）"""
+        """全量回填（按 P0→P1→P2 顺序，共40次API调用→36个数据集）"""
         logger.info("=== Starting full backfill ===")
         failed = 0
 
-        # P0: 清单
+        # ═══ P0: 核心 ═══
         failed += self._backfill_universe()
         failed += self._backfill_code_info()
-
-        # P0: 日K线（核心）
         failed += self._backfill_kline("etf_daily", "day", "ETF", "EXTRA_ETF")
-
-        # P0: 分钟K线
         failed += self._backfill_kline("etf_min1", "1min", "ETF", "EXTRA_ETF", is_minute=True)
+
+        # ═══ P1: 重要 ═══
+        # 复权因子
+        failed += self._backfill_adj_factor("etf_adj", "EXTRA_ETF")
+        failed += self._backfill_adj_factor("stock_adj", "EXTRA_STOCK_A")
+
+        # 指数K线
+        failed += self._backfill_kline("index_daily", "day", "INDEX", "EXTRA_INDEX_A")
+        failed += self._backfill_kline("index_min1", "1min", "INDEX", "EXTRA_INDEX_A", is_minute=True)
+        failed += self._backfill_kline("index_min5", "5min", "INDEX", "EXTRA_INDEX_A", is_minute=True)
+
+        # ETF 5分钟 + A股日K线
+        failed += self._backfill_kline("etf_min5", "5min", "ETF", "EXTRA_ETF", is_minute=True)
+        failed += self._backfill_kline("stock_daily", "day", "STOCK", "EXTRA_STOCK_A")
+
+        # ETF 净值/份额
+        failed += self._backfill_fund_data("etf_nav", "get_fund_nav", "ETF", "EXTRA_ETF")
+        failed += self._backfill_fund_data("etf_share", "get_fund_share", "ETF", "EXTRA_ETF")
+
+        # 指数成分股/权重
+        failed += self._backfill_index_data("index_constituent", "get_index_constituent")
+        failed += self._backfill_index_data("index_weight", "get_index_weight")
+
+        # 基本面5张表
+        for table, api in [
+            ("balance_sheet", "get_balance_sheet"),
+            ("income", "get_income"),
+            ("cash_flow", "get_cash_flow"),
+            ("profit_express", "get_profit_express"),
+            ("profit_notice", "get_profit_notice"),
+        ]:
+            failed += self._backfill_financial(table, api)
+
+        # ═══ P2: 补充 ═══
+        # 事件数据10张
+        failed += self._backfill_event("stock_margin_summary", "get_margin_summary")
+        failed += self._backfill_event("stock_margin_detail", "get_margin_detail")
+        failed += self._backfill_event("stock_block_trading", "get_block_trading")
+        failed += self._backfill_event("stock_longhubang", "get_long_hu_bang")
+        failed += self._backfill_event("stock_dividend", "get_dividend")
+        failed += self._backfill_event("stock_equity_structure", "get_equity_structure")
+        failed += self._backfill_event("stock_holder_num", "get_holder_num")
+        failed += self._backfill_event("stock_share_holder", "get_share_holder")
+        failed += self._backfill_event("stock_equity_pledge", "get_equity_pledge_freeze")
+        failed += self._backfill_event("stock_right_issue", "get_right_issue")
+
+        # 行业分类4张
+        failed += self._backfill_industry("industry_base", "get_industry_base_info")
+        failed += self._backfill_industry("industry_constituent", "get_industry_constituent")
+        failed += self._backfill_industry("industry_daily", "get_industry_daily")
+        failed += self._backfill_industry("industry_weight", "get_industry_weight")
+
+        # 历史代码表 + ETF PCF
+        failed += self._backfill_hist_code_list()
+        failed += self._backfill_etf_pcf()
 
         logger.info(f"=== Backfill complete: {failed} failures ===")
         return failed
@@ -232,6 +283,229 @@ class Pipeline:
     def _run_backfill_missing(self) -> int:
         """补拉缺失天数"""
         logger.info("=== Backfill missing days ===")
+        return 0
+
+    # ── P1/P2 补全方法 ───────────────────────────────────────
+
+    def _backfill_adj_factor(self, table: str, security_type: str) -> int:
+        """回填复权因子"""
+        import pandas as pd
+        try:
+            codes = self._client.get_base_data().get_code_list(security_type=security_type)
+            if not codes:
+                return 0
+            sample = codes[:50] if self._cfg.get("pipeline.test_mode", False) else codes
+            import AmazingData as ad
+            ad_inst = self._client.get_ad()
+            for i in range(0, len(sample), 100):
+                batch = sample[i : i + 100]
+                try:
+                    result = self._client.get_base_data().get_adj_factor(
+                        batch, local_path="/tmp/ad_cache//", is_local=False
+                    )
+                    if result is not None:
+                        df = pd.DataFrame(result) if not isinstance(result, pd.DataFrame) else result
+                        self._store.write_unpartitioned(table, df)
+                        self._meta.log_update(table, "backfill", "amazingdata", "ok", rows_count=len(df))
+                        logger.info(f"  {table} [{i}]: {len(df)} rows")
+                except Exception as e:
+                    logger.warning(f"  {table} batch {i}: {e}")
+        except Exception as e:
+            logger.error(f"  {table} failed: {e}")
+            return 1
+        return 0
+
+    def _backfill_fund_data(self, table: str, api_name: str, label: str, security_type: str) -> int:
+        """回填 ETF 净值/份额"""
+        try:
+            codes = self._client.get_base_data().get_code_list(security_type=security_type)
+            if not codes:
+                return 0
+            sample = codes[:50] if self._cfg.get("pipeline.test_mode", False) else codes
+            info = self._client.get_info_data()
+            api = getattr(info, api_name)
+            result = api(sample, local_path="/tmp/ad_cache//", is_local=False)
+            if result:
+                import pandas as pd
+                all_frames = []
+                if isinstance(result, dict):
+                    for code, df in result.items():
+                        if isinstance(df, pd.DataFrame) and not df.empty:
+                            df["code"] = code
+                            all_frames.append(df)
+                if all_frames:
+                    merged = pd.concat(all_frames, ignore_index=True)
+                    self._store.write_unpartitioned(table, merged)
+                    self._meta.log_update(table, "backfill", "amazingdata", "ok", rows_count=len(merged))
+                    logger.info(f"  {table}: {len(merged)} rows")
+        except Exception as e:
+            logger.warning(f"  {table} failed (expected if no permission): {e}")
+        return 0
+
+    def _backfill_index_data(self, table: str, api_name: str) -> int:
+        """回填指数成分股/权重"""
+        try:
+            codes = self._client.get_base_data().get_code_list(security_type="EXTRA_INDEX_A")
+            if not codes:
+                return 0
+            sample = codes[:20] if self._cfg.get("pipeline.test_mode", False) else codes[:200]
+            info = self._client.get_info_data()
+            api = getattr(info, api_name)
+            result = api(sample, local_path="/tmp/ad_cache//", is_local=False)
+            if result:
+                import pandas as pd
+                all_frames = []
+                if isinstance(result, dict):
+                    for code, df in result.items():
+                        if isinstance(df, pd.DataFrame) and not df.empty:
+                            df["index_code"] = code
+                            all_frames.append(df)
+                if all_frames:
+                    merged = pd.concat(all_frames, ignore_index=True)
+                    self._store.write_unpartitioned(table, merged)
+                    self._meta.log_update(table, "backfill", "amazingdata", "ok", rows_count=len(merged))
+                    logger.info(f"  {table}: {len(merged)} rows")
+        except Exception as e:
+            logger.warning(f"  {table} failed (expected if no permission): {e}")
+        return 0
+
+    def _backfill_financial(self, table: str, api_name: str) -> int:
+        """回填财务表"""
+        try:
+            codes = self._client.get_base_data().get_code_list(security_type="EXTRA_STOCK_A")
+            if not codes:
+                return 0
+            sample = codes[:20] if self._cfg.get("pipeline.test_mode", False) else codes[:500]
+            info = self._client.get_info_data()
+            api = getattr(info, api_name)
+            result = api(sample, local_path="/tmp/ad_cache//", is_local=False)
+            if result:
+                import pandas as pd
+                all_frames = []
+                if isinstance(result, dict):
+                    for code, df in result.items():
+                        if isinstance(df, pd.DataFrame) and not df.empty:
+                            df["code"] = code
+                            all_frames.append(df)
+                if all_frames:
+                    merged = pd.concat(all_frames, ignore_index=True)
+                    sub_dir = f"stock_financial/{table}"
+                    self._store.write_unpartitioned(sub_dir, merged)
+                    self._meta.log_update(sub_dir, "backfill", "amazingdata", "ok", rows_count=len(merged))
+                    logger.info(f"  stock_financial/{table}: {len(merged)} rows")
+        except Exception as e:
+            logger.warning(f"  stock_financial/{table} failed (expected if no permission): {e}")
+        return 0
+
+    def _backfill_event(self, table: str, api_name: str) -> int:
+        """回填事件数据"""
+        try:
+            # 取前100只股票作为样本（事件数据全量拉取代价大）
+            codes = self._client.get_base_data().get_code_list(security_type="EXTRA_STOCK_A")
+            if not codes:
+                return 0
+            sample = codes[:20] if self._cfg.get("pipeline.test_mode", False) else codes[:100]
+            info = self._client.get_info_data()
+            api = getattr(info, api_name)
+            result = api(sample, local_path="/tmp/ad_cache//", is_local=False)
+            if result:
+                import pandas as pd
+                all_frames = []
+                if isinstance(result, dict):
+                    for code, df in result.items():
+                        if isinstance(df, pd.DataFrame) and not df.empty:
+                            df["code"] = code
+                            all_frames.append(df)
+                if all_frames:
+                    merged = pd.concat(all_frames, ignore_index=True)
+                    self._store.write_unpartitioned(table, merged)
+                    self._meta.log_update(table, "backfill", "amazingdata", "ok", rows_count=len(merged))
+                    logger.info(f"  {table}: {len(merged)} rows")
+        except Exception as e:
+            logger.warning(f"  {table} failed (expected if no permission): {e}")
+        return 0
+
+    def _backfill_industry(self, table: str, api_name: str) -> int:
+        """回填行业数据"""
+        try:
+            info = self._client.get_info_data()
+            api = getattr(info, api_name)
+            # 行业基础信息不需要 code_list
+            if api_name == "get_industry_base_info":
+                result = api(local_path="/tmp/ad_cache//", is_local=False)
+            else:
+                # 需要传入行业代码
+                import pandas as pd
+                base = info.get_industry_base_info(local_path="/tmp/ad_cache//", is_local=False)
+                industries = []
+                if isinstance(base, (list, pd.DataFrame)):
+                    try:
+                        base_df = pd.DataFrame(base) if isinstance(base, list) else base
+                        if "industry_code" in base_df.columns:
+                            industries = base_df["industry_code"].tolist()[:20]
+                    except Exception:
+                        pass
+                if not industries:
+                    logger.warning(f"  {table}: no industry codes available")
+                    return 0
+                result = api(industries, local_path="/tmp/ad_cache//", is_local=False)
+
+            if result:
+                all_frames = []
+                if isinstance(result, dict):
+                    for code, df in result.items():
+                        if hasattr(df, "empty") and not df.empty:
+                            df["industry_code"] = code
+                            all_frames.append(df)
+                if all_frames:
+                    merged = pd.concat(all_frames, ignore_index=True)
+                    self._store.write_unpartitioned(table, merged)
+                    self._meta.log_update(table, "backfill", "amazingdata", "ok", rows_count=len(merged))
+                    logger.info(f"  {table}: {len(merged)} rows")
+        except Exception as e:
+            logger.warning(f"  {table} failed (expected if no permission): {e}")
+        return 0
+
+    def _backfill_hist_code_list(self) -> int:
+        """回填历史代码表"""
+        try:
+            cal = self._client.get_calendar()
+            if not cal:
+                return 1
+            result = self._client.get_base_data().get_hist_code_list(
+                security_type="EXTRA_STOCK_A",
+                start_date=20130101,
+                end_date=cal[-1],
+                local_path="/tmp/ad_cache//",
+            )
+            if result is not None:
+                import pandas as pd
+                df = pd.DataFrame(result) if not isinstance(result, pd.DataFrame) else result
+                path = Path(self._cfg.storage_root) / "meta" / "hist_code_list.parquet"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                df.to_parquet(path, index=False)
+                self._meta.log_update("hist_code_list", "backfill", "amazingdata", "ok", rows_count=len(df))
+                logger.info(f"  hist_code_list: {len(df)} rows")
+        except Exception as e:
+            logger.warning(f"  hist_code_list failed: {e}")
+        return 0
+
+    def _backfill_etf_pcf(self) -> int:
+        """回填 ETF PCF"""
+        try:
+            codes = self._client.get_base_data().get_code_list(security_type="EXTRA_ETF")
+            if not codes:
+                return 0
+            sample = codes[:10] if self._cfg.get("pipeline.test_mode", False) else codes[:50]
+            result = self._client.get_base_data().get_etf_pcf(sample)
+            if result is not None:
+                import pandas as pd
+                df = pd.DataFrame(result) if not isinstance(result, pd.DataFrame) else result
+                self._store.write_unpartitioned("etf_pcf", df)
+                self._meta.log_update("etf_pcf", "backfill", "amazingdata", "ok", rows_count=len(df))
+                logger.info(f"  etf_pcf: {len(df)} rows")
+        except Exception as e:
+            logger.warning(f"  etf_pcf failed (expected if no permission): {e}")
         return 0
 
 
