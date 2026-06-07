@@ -1,0 +1,33 @@
+# ============================================================
+# AmazingData 管道配置
+# ============================================================
+# 敏感信息（密码）通过 ${ENV_VAR} 从 .env 注入
+# 配置加载优先级: 默认值 ← 本文件 ← .env ← 环境变量
+# ============================================================
+
+amazingdata:
+  username: "${AMAZINGDATA_USERNAME}"   # 账号，如 210300141495
+  password: "${AMAZINGDATA_PASSWORD}"   # 密码
+  host: "120.86.124.106"                # 服务器地址
+  port: 8600                            # 端口
+
+storage:
+  root: "/mnt/etf_data"                 # Parquet 数据根目录
+
+pipeline:
+  batch_size_etf_kline: 50              # ETF 日K线每批数量
+  batch_size_etf_min1: 10               # ETF 分钟K线每批数量
+  batch_size_a_stock: 100               # A股每批数量
+  batch_size_financial: 500             # 基本面每批数量
+  retry_times: 3                        # 失败重试次数
+  retry_delay: 5                        # 重试间隔(秒)
+
+fallback:
+  enabled: true                         # 启用备源降级
+  prefer_efinance: true                 # efinance 备源
+  prefer_baostock: true                 # baostock 备源
+  prefer_akshare: true                  # akshare 备源
+
+notify:
+  serverchan_enabled: true              # Server酱推送
+  qq_enabled_for_critical: true         # 关键错误QQ通知

@@ -35,7 +35,7 @@ python -m etf_data.amazingdata.pipeline --help
 python scripts/generate_test_data.py --mode core --etf-count 50 --years 2023-2025
 
 # Point config to test data
-# Edit config/etf_data_config.yaml → storage.root: ~/data/test_parquet
+# Edit config/amazingdata_pipeline.yaml → storage.root: ~/data/test_parquet
 ```
 
 ---
