@@ -33,36 +33,40 @@ pip install -e .[full]
 
 ### 2.1 AmazingData 账号
 
-在 `.env` 或 `amazingdata_config.yaml` 中配置登录信息：
+在 `config/amazingdata_pipeline.yaml` 或 `.env` 中配置登录信息：
 
 ```yaml
-# amazingdata_config.yaml
+# config/amazingdata_pipeline.yaml
 amazingdata:
-  username: "your_account"
-  password: "your_password"
+  username: "${AMAZINGDATA_USERNAME}"   # 或写死账号
+  password: "${AMAZINGDATA_PASSWORD}"   # 或写死密码
   host: "120.86.124.106"
   port: 8600
 ```
 
+`${VAR}` 语法会从 `.env` 或环境变量注入。优先顺序：环境变量 > `.env` > YAML 文件 > 代码默认值。
+
 ### 2.2 存储路径
 
 ```yaml
-# config/etf_data_config.yaml
+# config/amazingdata_pipeline.yaml
 storage:
   root: "/mnt/etf_data"       # 生产数据
   # root: "~/data/test_parquet"  # 测试数据（切换至此即可）
 ```
 
-### 2.3 数据源开关
+### 2.3 备源降级开关
 
 ```yaml
-# config/etf_data_config.yaml
-sources:
-  amazingdata: true           # 主源
-  efinance: true              # ETF K线备源
-  baostock: true              # A股日线/复权备源 + 交易日历（必开）
-  akshare: true               # 基本面/行业/龙虎榜备源
+# config/amazingdata_pipeline.yaml
+fallback:
+  enabled: true               # 启用备源降级（主源 AmazingData 断开时自动切换）
+  prefer_efinance: true       # ETF K线备源（东方财富封装）
+  prefer_baostock: true       # A股日线/复权备源 + 交易日历（推荐开）
+  prefer_akshare: true        # 基本面/行业/龙虎榜备源
 ```
+
+当 AmazingData 无权限或网络不可达时，降级顺序：efinance → baostock → akshare。
 
 ---
 
@@ -108,8 +112,8 @@ print(len(df))
 ### 3.3 切换配置到测试数据
 
 ```bash
-# 改 config/etf_data_config.yaml 的 storage.root
-sed -i 's|/mnt/etf_data|~/data/test_parquet|' config/etf_data_config.yaml
+# 改 config/amazingdata_pipeline.yaml 的 storage.root
+sed -i 's|/mnt/etf_data|~/data/test_parquet|' config/amazingdata_pipeline.yaml
 ```
 
 ---
