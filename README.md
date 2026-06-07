@@ -1,105 +1,147 @@
-# ETF_data — A股 ETF 全维度数据管道
+# ETF Data Pipeline
 
-> 多源采集 · YAML 驱动 · SQL Server 存储 · 增量更新 · 交叉验证
+> A股 ETF 全维度数据管道 — 基于 AmazingData 的数据采集、存储和消费接口
+
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![PyPI version](https://img.shields.io/badge/version-0.1.0-orange)](https://github.com/2learnsomething/ETF_data)
 
 ---
 
-## 快速开始
+## Overview
+
+ETF Data Pipeline collects full-market ETF, index, and A-share data from **AmazingData** (primary), falling back to efinance / baostock / akshare automatically. Data is stored as **Parquet** files partitioned by year + symbol, then consumed locally by `ETF_Rotation_Strategy` via the bridge layer.
+
+**Total coverage:** ~1,541 ETFs / 621 indices / 5,525 A-shares — ~152 GB (Parquet, zstd).
+
+| Layer | Package | Description |
+|-------|---------|-------------|
+| Collection | `etf_data.amazingdata` | Multi-source fetcher with auto-fallback |
+| Storage | `etf_data.amazingdata.storage` | Parquet partition writer + SQLite metadata |
+| Bridge | `etf_data.bridge` | Consumer-facing API for ETF_Rotation_Strategy |
+| Pipeline | `etf_data.amazingdata.pipeline` | Backfill / incremental / backfill-missing scheduler |
+
+---
+
+## Quick Start
 
 ```bash
-cd ETF_data
-pip install -r requirements.txt
+# Install
+pip install -e .
 
-# 增量更新
-python src/pipeline/run.py --incremental
+# Help
+python -m etf_data.amazingdata.pipeline --help
 
-# 全量回填
-python src/scheduler/backfill.py
+# Generate synthetic test data (no AmazingData permissions needed)
+python scripts/generate_test_data.py --mode core --etf-count 50 --years 2023-2025
 
-# 指定任务
-python src/pipeline/run.py --tasks etf_daily,etf_nav
+# Point config to test data
+# Edit config/etf_data_config.yaml → storage.root: ~/data/test_parquet
 ```
 
 ---
 
-## 数据管道
+## Data Sources
 
-12 个任务，4 个数据源，30 只 ETFs。每跑一次自动产出 4 份报告：
-
-| 报告 | 命令 | 内容 |
-|------|------|------|
-| 质量报告 | `src/quality/check.py` | 11表健康状态、新鲜度、重复 |
-| 监控看板 | `src/quality/dashboard.py` | HTML 可视化面板 |
-| 持仓穿透 | `src/quality/portfolio.py` | ETF重仓股重叠分析 |
-| 三方比对 | `src/comparator/report.py` | Tushare vs 新浪 vs 腾讯 |
+| Source | Role | Coverage |
+|--------|------|----------|
+| **AmazingData** (银河证券) | Primary | ETF / Index / A-share full market |
+| efinance (东方财富) | Fallback | ETF / Index daily + minute K-line |
+| baostock | Fallback | A-share daily + adjustment factors |
+| akshare | Fallback | Fundamentals, industry, events |
 
 ---
 
-## 数据源
+## Project Structure
 
-| 源 | 接入 | 状态 |
-|----|------|------|
-| Tushare Pro | HTTP API | 主力，需token |
-| 新浪财经 | akshare / curl | 验证源，100%价格一致 |
-| 腾讯财经 | curl | 第三验证源 |
-| 同花顺 | akshare | 实时净值 |
-| 上证所 | akshare | ETF规模 |
+```
+ETF_data/                      ← Installable package root
+├── etf_data/                  ← Python package
+│   ├── __init__.py
+│   ├── amazingdata/           ← New AmazingData pipeline
+│   │   ├── client.py          ← Login + baostock calendar fallback
+│   │   ├── config.py          ← Config management
+│   │   ├── fetcher.py         ← UnifiedFetcher (multi-source routing)
+│   │   ├── storage.py         ← ParquetStore + MetaStore (SQLite)
+│   │   └── pipeline.py        ← Backfill / incremental scheduler
+│   ├── bridge/                ← Consumer-facing API
+│   │   ├── data_bridge.py     ← AmazingDataBridge class
+│   │   └── __init__.py
+│   ├── api/ comparator/       ← [DEPRECATED] Old Tushare pipeline
+│   ├── pipeline/ quality/
+│   ├── scheduler/ storage/ utils/
+├── config/                    ← YAML configuration files
+├── scripts/                   ← Utility scripts
+│   ├── generate_test_data.py  ← Synthetic data generator
+│   └── register_cron.sh       ← Cron job registration
+├── pyproject.toml
+└── README.md
+```
 
 ---
 
-## HTTP API 服务
+## Storage Architecture
+
+```
+/mnt/etf_data/                  ← Production data root
+└── parquet/
+    ├── etf_daily/year=*/symbol=*.parquet
+    ├── etf_min1/year=*/month=*/symbol=*.parquet
+    ├── etf_min5/year=*/month=*/symbol=*.parquet
+    ├── etf_nav/ etf_share/ etf_adj/ etf_pcf/
+    ├── index_daily/year=*/index_min1/
+    ├── stock_daily/year=*/stock_adj/
+    ├── stock_financial/
+    ├── industry_*/
+    └── ...
+├── meta/                      ← Metadata (universe lists, calendar)
+│   ├── etf_universe.parquet
+│   ├── trade_calendar.parquet
+│   └── meta.db (SQLite)
+└── bridge/
+    └── data_bridge.py
+```
+
+Test data goes to `~/data/test_parquet/` — same format, switchable via config.
+
+---
+
+## Pipeline Modes
 
 ```bash
-python src/api/server.py --port 8420
-```
+# Full backfill (all ETFs, all years)
+python -m etf_data.amazingdata.pipeline --mode backfill
 
-| 路径 | 返回 |
-|------|------|
-| `GET /etfs` | ETF 列表 |
-| `GET /daily/510050?days=250` | 日线 |
-| `GET /close?days=60` | 收盘价矩阵 |
-| `GET /portfolio/510050` | 持仓明细 |
-| `GET /calendar?year=2026` | 交易日历 |
-| `GET /health` | 健康检查 |
-| `GET /quality` | 质量报告 |
-| `GET /dashboard` | 监控看板 |
+# Daily incremental update (run at 15:30 on trading days)
+python -m etf_data.amazingdata.pipeline --mode incremental
 
----
-
-## daily_news 桥接
-
-```python
-from ETF_data_bridge import get_etf_daily, get_etf_list
-
-etfs = get_etf_list()              # 全部 ETF 列表
-df = get_etf_daily("510050", 250)  # 近一年日线
-close = get_all_close(60)          # 收盘价矩阵
+# Backfill missing days
+python -m etf_data.amazingdata.pipeline --mode backfill-missing --table etf_daily --days 7
 ```
 
 ---
 
-## 增量 vs 全量
+## Packages
 
-| 模式 | 说明 |
-|------|------|
-| `run.py --incremental` | 增量（默认），只拉最近 N 天 |
-| `run.py --tasks etf_daily` | 全量拉指定任务 |
-| `backfill.py` | 强制全量所有任务 |
+| Package | Import | Install |
+|---------|--------|---------|
+| Core pipeline | `from etf_data.amazingdata import ...` | `pip install -e .` |
+| With old deps | `from etf_data.scheduler import ...` | `pip install -e .[old]` |
+| All deps | — | `pip install -e .[full]` |
 
 ---
 
-## 架构
+## Dependencies
 
-```
-config/pipeline_tasks.yaml  →  DataPipeline
-                                ├── fetchers/ (4 sources)
-                                ├── storage/  (SQL Server + Parquet)
-                                ├── validators
-                                ├── scheduler/
-                                ├── comparator/ (三方比对)
-                                └── quality/   (监控 + 持仓)
-└→ reports/ (quality | dashboard | portfolio | consistency)
-└→ ETF_data_bridge.py → daily_news
-```
+- **Python 3.10+** (tested on 3.12)
+- **pandas, numpy, pyarrow** — Parquet storage
+- **baostock** — trade calendar fallback
+- **akshare** — multi-source data fallback
+- **pyyaml, python-dotenv** — config
+- **AmazingData SDK** — primary data source (installed separately)
 
-当前数据量：13 张表，~115,000 行。主键已启用，写入使用 fast_executemany 加速。
+---
+
+## Related Projects
+
+- [ETF_Rotation_Strategy](https://github.com/2learnsomething/ETF_Rotation_Strategy) — Barra multi-factor ETF rotation backtest engine (consumes data from this pipeline)
+- [daily-news](https://github.com/2learnsomething/daily-news) — Daily A-share market briefing (uses ETF data bridge)

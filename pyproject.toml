@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "etf-data-pipeline"
+version = "0.1.0"
+description = "A股 ETF 全维度数据管道 — 基于 AmazingData 的数据采集、存储和消费接口"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "ETF Data Pipeline Team"}
+]
+keywords = ["quantitative-finance", "amazingdata", "etf", "data-pipeline", "parquet"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "pyarrow>=12.0",
+    "baostock>=0.8.8",
+    "akshare>=1.14",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "tqdm>=4.66",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+old = [
+    "tushare>=1.4",
+    "pyodbc>=5.0",
+    "tabulate>=0.9",
+]
+full = ["etf-data-pipeline[old]"]
+
+[project.urls]
+Repository = "https://github.com/2learnsomething/ETF_data"
+
+[tool.setuptools.packages.find]
+include = ["etf_data*"]
