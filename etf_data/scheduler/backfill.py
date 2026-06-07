@@ -5,10 +5,10 @@
 遍历 pipeline_tasks.yaml 所有任务，以非增量模式拉取全量历史数据。
 
 用法:
-    python src/scheduler/backfill.py                    # 全部任务
-    python src/scheduler/backfill.py --tasks etf_daily   # 指定任务
-    python src/scheduler/backfill.py --notify             # 完成后推送通知
-    python src/scheduler/backfill.py --dry-run            # 干跑
+    python etf_data/scheduler/backfill.py                    # 全部任务
+    python etf_data/scheduler/backfill.py --tasks etf_daily   # 指定任务
+    python etf_data/scheduler/backfill.py --notify             # 完成后推送通知
+    python etf_data/scheduler/backfill.py --dry-run            # 干跑
 """
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ def setup_logging(log_dir: str = "logs") -> None:
 def send_notification(results: dict) -> None:
     """通过 Server酱 推送通知"""
     try:
-        from src.pipeline.notify import send_pipeline_report
+        from etf_data.pipeline.notify import send_pipeline_report
         send_pipeline_report(results.get("results", []), dry_run=False)
     except Exception as e:
         logging.getLogger("etf_data.pipeline").warning(f"Notification failed: {e}")
@@ -63,8 +63,8 @@ def main():
     setup_logging(log_dir=args.log_dir)
     logger = logging.getLogger("etf_data.pipeline")
 
-    from src.utils.config_helper import init
-    from src.pipeline import DataPipeline
+    from etf_data.utils.config_helper import init
+    from etf_data.pipeline import DataPipeline
 
     init()
 

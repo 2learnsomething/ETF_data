@@ -5,9 +5,9 @@
 交易日 15:30 后运行，增量拉取最新数据。
 
 用法:
-    python src/scheduler/daily_update.py          # 仅交易日执行
-    python src/scheduler/daily_update.py --force  # 强制执行（忽略交易日检查）
-    python src/scheduler/daily_update.py --notify # 完成后推送通知
+    python etf_data/scheduler/daily_update.py          # 仅交易日执行
+    python etf_data/scheduler/daily_update.py --force  # 强制执行（忽略交易日检查）
+    python etf_data/scheduler/daily_update.py --notify # 完成后推送通知
 """
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def setup_logging(log_dir: str = "logs") -> None:
 def send_notification(summary: str) -> None:
     """通过 Server酱 推送通知"""
     try:
-        from src.pipeline.notify import _send_serverchan
+        from etf_data.pipeline.notify import _send_serverchan
         _send_serverchan([
             f"## ETF Data Daily Update",
             f"**{summary}**",
@@ -67,14 +67,14 @@ def main():
 
     # 交易日检查
     if not args.force:
-        from src.utils.calendar import get_calendar
+        from etf_data.utils.calendar import get_calendar
         cal = get_calendar()
         if not cal.is_trading_day():
             logger.info(f"Today ({date.today()}) is not a trading day. Skipping.")
             return
 
-    from src.utils.config_helper import init
-    from src.pipeline import DataPipeline
+    from etf_data.utils.config_helper import init
+    from etf_data.pipeline import DataPipeline
 
     init()
 

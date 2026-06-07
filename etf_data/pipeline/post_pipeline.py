@@ -18,7 +18,7 @@ def run_quality_check() -> str | None:
     import subprocess
     output = Path("reports") / f"quality_{datetime.now().strftime('%Y%m%d')}.md"
     cmd = [
-        sys.executable, "src/quality/check.py",
+        sys.executable, "etf_data/quality/check.py",
         "-o", str(output),
     ]
     ret = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
@@ -34,7 +34,7 @@ def run_dashboard() -> str | None:
     import subprocess
     output = Path("reports") / "dashboard.html"
     cmd = [
-        sys.executable, "src/quality/dashboard.py",
+        sys.executable, "etf_data/quality/dashboard.py",
         "-o", str(output),
     ]
     ret = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
@@ -50,7 +50,7 @@ def run_portfolio() -> str | None:
     import subprocess
     output = Path("reports") / f"portfolio_{datetime.now().strftime('%Y%m%d')}.md"
     cmd = [
-        sys.executable, "src/quality/portfolio.py",
+        sys.executable, "etf_data/quality/portfolio.py",
         "-o", str(output),
     ]
     ret = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
@@ -69,7 +69,7 @@ def run_comparison() -> str | None:
     start = (datetime.now() - timedelta(days=30)).strftime("%Y%m%d")
     output = Path("reports") / f"consistency_{datetime.now().strftime('%Y%m%d')}.md"
     cmd = [
-        sys.executable, "src/comparator/report.py",
+        sys.executable, "etf_data/comparator/report.py",
         "--symbols", symbols, "--start", start, "--end", end,
         "-o", str(output),
     ]

@@ -5,9 +5,9 @@ ETF 持仓穿透分析
 从 fund_portfolio 表分析 ETF 持仓重叠度、行业暴露、集中度。
 
 用法:
-    python src/quality/portfolio.py                    # 全部持仓分析
-    python src/quality/portfolio.py --symbols 510050,510300  # 指定ETF
-    python src/quality/portfolio.py -o reports/portfolio.md   # 输出报告
+    python etf_data/quality/portfolio.py                    # 全部持仓分析
+    python etf_data/quality/portfolio.py --symbols 510050,510300  # 指定ETF
+    python etf_data/quality/portfolio.py -o reports/portfolio.md   # 输出报告
 """
 from __future__ import annotations
 
@@ -133,7 +133,7 @@ def main():
     parser.add_argument("--output", "-o", help="输出文件路径")
     args = parser.parse_args()
 
-    from src.utils.config_helper import init, get_db_conn_str
+    from etf_data.utils.config_helper import init, get_db_conn_str
     init()
     import pyodbc
     conn = pyodbc.connect(get_db_conn_str("tushare"))

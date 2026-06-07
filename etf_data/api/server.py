@@ -3,9 +3,9 @@
 ETF 数据桥接服务 — 轻量 HTTP API
 
 用法:
-    python src/api/server.py                    # 默认 localhost:8420
-    python src/api/server.py --port 8421        # 指定端口
-    python src/api/server.py --host 0.0.0.0     # 外网可访问
+    python etf_data/api/server.py                    # 默认 localhost:8420
+    python etf_data/api/server.py --port 8421        # 指定端口
+    python etf_data/api/server.py --host 0.0.0.0     # 外网可访问
 
 请求:
     GET /etfs                          → ETF 列表
@@ -45,7 +45,7 @@ _CONN = None
 def _get_conn():
     global _CONN
     if _CONN is None:
-        from src.utils.config_helper import init, get_db_conn_str
+        from etf_data.utils.config_helper import init, get_db_conn_str
         init()
         conn_str = get_db_conn_str("tushare")
         _CONN = pyodbc.connect(conn_str)
@@ -116,7 +116,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/quality":
                 import subprocess
                 r = subprocess.run(
-                    [sys.executable, "src/quality/check.py"],
+                    [sys.executable, "etf_data/quality/check.py"],
                     capture_output=True, text=True, timeout=30,
                     cwd=str(_project_root),
                 )
@@ -125,7 +125,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/dashboard":
                 import subprocess
                 r = subprocess.run(
-                    [sys.executable, "src/quality/dashboard.py", "-o", "/tmp/dash.html"],
+                    [sys.executable, "etf_data/quality/dashboard.py", "-o", "/tmp/dash.html"],
                     capture_output=True, text=True, timeout=30,
                     cwd=str(_project_root),
                 )

@@ -42,7 +42,7 @@ class SQLServerStorage(BaseStorage):
 
     def connect(self) -> None:
         if self._conn_str is None:
-            from src.utils.config_helper import get_db_conn_str
+            from etf_data.utils.config_helper import get_db_conn_str
             self._conn_str = get_db_conn_str("tushare")
         self._conn = pyodbc.connect(self._conn_str)
         self._conn.autocommit = False

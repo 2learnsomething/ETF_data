@@ -69,7 +69,7 @@ def _send_serverchan(lines: list[str]) -> bool:
     """通过 ServerChan 推送"""
     import urllib.parse
     import urllib.request
-    from src.utils.config_helper import get_config
+    from etf_data.utils.config_helper import get_config
 
     try:
         cfg = get_config("notify")

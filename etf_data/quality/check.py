@@ -6,9 +6,9 @@ ETF 数据质量监控
 支持定时运行（Hermes cron）和 CLI。
 
 用法:
-    python src/quality/check.py                          # 全部检查
-    python src/quality/check.py --output reports/quality_20260602.md
-    python src/quality/check.py --notify                  # 推送告警
+    python etf_data/quality/check.py                          # 全部检查
+    python etf_data/quality/check.py --output reports/quality_20260602.md
+    python etf_data/quality/check.py --notify                  # 推送告警
 """
 from __future__ import annotations
 
@@ -232,7 +232,7 @@ def main():
 
     setup_logging()
 
-    from src.utils.config_helper import init, get_db_conn_str
+    from etf_data.utils.config_helper import init, get_db_conn_str
     init()
     import pyodbc
     conn = pyodbc.connect(get_db_conn_str("tushare"))
@@ -258,7 +258,7 @@ def main():
     if args.notify:
         warn_count = sum(1 for r in results if r["status"] != "ok")
         if warn_count > 0:
-            from src.pipeline.notify import _send_serverchan
+            from etf_data.pipeline.notify import _send_serverchan
             lines = [
                 f"## ETF Data Quality ⚠️",
                 f"**{warn_count} 条告警** — {datetime.now().strftime('%Y-%m-%d %H:%M')}",

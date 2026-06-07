@@ -3,25 +3,25 @@ ETF_data 数据管道 CLI 入口
 
 用法:
     # 全量运行
-    python src/pipeline/run.py
+    python etf_data/pipeline/run.py
 
     # 干跑（只拉取不写入）
-    python src/pipeline/run.py --dry-run
+    python etf_data/pipeline/run.py --dry-run
 
     # 指定任务
-    python src/pipeline/run.py --tasks stock_basic,trade_calendar
+    python etf_data/pipeline/run.py --tasks stock_basic,trade_calendar
 
     # 增量模式（覆盖 YAML 里的 incremental 设置）
-    python src/pipeline/run.py --incremental
+    python etf_data/pipeline/run.py --incremental
 
     # 静默 + 通知
-    python src/pipeline/run.py --quiet --notify
+    python etf_data/pipeline/run.py --quiet --notify
 
     # 注册为 Hermes 定时任务:
     hermes cron create \
         --name "etf-data-daily" \
         --schedule "0 18 * * 1-5" \
-        --prompt "cd /home/fangyao_xu/ETF_data && PYTHONPATH=. python src/pipeline/run.py --incremental --notify"
+        --prompt "cd /home/fangyao_xu/ETF_data && PYTHONPATH=. python etf_data/pipeline/run.py --incremental --notify"
 """
 from __future__ import annotations
 
@@ -73,8 +73,8 @@ def run_pipeline(
     notify: bool = False,
 ) -> dict:
     """运行数据管道，返回汇总结果。"""
-    from src.utils.config_helper import init
-    from src.pipeline import DataPipeline
+    from etf_data.utils.config_helper import init
+    from etf_data.pipeline import DataPipeline
 
     init()
 
@@ -112,7 +112,7 @@ def run_pipeline(
 
     if notify:
         try:
-            from src.pipeline.notify import send_pipeline_report
+            from etf_data.pipeline.notify import send_pipeline_report
             send_pipeline_report(results, dry_run=dry_run)
         except Exception as e:
             logging.getLogger("etf_data.pipeline").warning(f"Notification failed: {e}")
@@ -154,7 +154,7 @@ def main():
 
     # 后处理：数据质量 + 三方比对 + 看板
     try:
-        from src.pipeline.post_pipeline import run_all
+        from etf_data.pipeline.post_pipeline import run_all
         reports = run_all()
         for name, path in reports.items():
             if path:

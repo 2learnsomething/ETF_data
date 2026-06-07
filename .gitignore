@@ -34,3 +34,9 @@ Thumbs.db
 
 # Hermes plans
 .hermes/plans/
+
+# 不需跟踪的文件
+*.pdf
+*.bak
+amazingdata_config.yaml
+wheels/

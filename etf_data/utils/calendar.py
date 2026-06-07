@@ -20,7 +20,7 @@ class TradingCalendar:
 
     def _load(self) -> set[date]:
         """从 SQL Server 加载交易日集合"""
-        from src.utils.config_helper import get_db_conn_str
+        from etf_data.utils.config_helper import get_db_conn_str
         conn_str = get_db_conn_str("tushare")
         conn = pyodbc.connect(conn_str)
         df = pd.read_sql_query(

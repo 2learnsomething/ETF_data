@@ -5,7 +5,7 @@ ETF 数据管道监控看板
 用 pyecharts 生成 HTML 看板：行数趋势、延迟分析、数据新鲜度。
 
 用法:
-    python src/quality/dashboard.py -o reports/dashboard.html
+    python etf_data/quality/dashboard.py -o reports/dashboard.html
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ sys.path.insert(0, str(_project_root))
 
 def build_dashboard(output_path: str) -> str:
     """生成 HTML 看板"""
-    from src.utils.config_helper import init, get_db_conn_str
+    from etf_data.utils.config_helper import init, get_db_conn_str
     init()
     import pyodbc
     conn = pyodbc.connect(get_db_conn_str("tushare"))

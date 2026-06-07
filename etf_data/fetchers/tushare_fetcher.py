@@ -76,14 +76,14 @@ class TushareFetcher(BaseFetcher):
 
     def connect(self) -> None:
         if self._token is None or self._http_url is None:
-            from src.utils.config_helper import get_config
+            from etf_data.utils.config_helper import get_config
             cfg = get_config("tushare_api")
             self._token = self._token or cfg["token"]
             self._http_url = self._http_url or cfg["http_url"]
 
         # 加载频率限制配置
         if not self._rate_config:
-            from src.utils.config_helper import get_config
+            from etf_data.utils.config_helper import get_config
             api_cfg = get_config("tushare_api")
             self._rate_config = api_cfg.get("rate_limit", {})
             if not self._rate_config:
