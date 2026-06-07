@@ -9,7 +9,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import baostock as bs
+try:
+    import baostock as bs
+except ImportError:
+    bs = None
 
 from .config import Config
 

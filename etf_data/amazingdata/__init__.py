@@ -7,15 +7,21 @@
 - 数据一致性检查 + 报警
 """
 
-from .client import AmazingDataClient
 from .config import Config
 from .fetcher import UnifiedFetcher
 from .storage import ParquetStore, MetaStore
 
+
+def get_client(*args, **kwargs):
+    """延迟导入 AmazingDataClient（避免依赖缺失时炸裂）。"""
+    from .client import AmazingDataClient
+    return AmazingDataClient(*args, **kwargs)
+
+
 __all__ = [
-    "AmazingDataClient",
     "Config",
     "UnifiedFetcher",
     "ParquetStore",
     "MetaStore",
+    "get_client",
 ]
