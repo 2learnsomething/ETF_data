@@ -45,7 +45,7 @@ _CONN = None
 def _get_conn():
     global _CONN
     if _CONN is None:
-        from etf_data.utils.config_helper import init, get_db_conn_str
+        from ..utils.config_helper import init, get_db_conn_str
         init()
         conn_str = get_db_conn_str("tushare")
         _CONN = pyodbc.connect(conn_str)
@@ -168,3 +168,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

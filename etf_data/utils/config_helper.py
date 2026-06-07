@@ -1,8 +1,16 @@
-"""
+""""
 ETF_data 统一配置加载器
+
+配置目录查找优先级：
+  1. init(config_dir=...) 显式传入
+  2. 环境变量 ETF_DATA_CONFIG_DIR
+  3. dev 模式：项目根目录下的 config/
+
 用法:
     from etf_data.config_helper import init, get_config, get_db_conn_str, get_tushare_api
-    init()
+    init()                              # dev 模式
+    init(config_dir="/etc/etf_data")    # 生产部署
+    init()                              # 或设置 export ETF_DATA_CONFIG_DIR=/etc/etf_data
     db_cfg = get_config("tushare_db")
     conn_str = get_db_conn_str("tushare")
     api = get_tushare_api()
@@ -13,13 +21,28 @@ from pathlib import Path
 
 import yaml
 
-_CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
 _config_cache: dict = {}
 
 
-def _load_env() -> dict:
+def _resolve_config_dir(config_dir: str | None = None) -> Path:
+    """解析配置目录：显式参数 > 环境变量 > dev 模式相对路径。"""
+    if config_dir:
+        return Path(config_dir)
+    env_val = os.environ.get("ETF_DATA_CONFIG_DIR")
+    if env_val:
+        return Path(env_val)
+    # dev 模式：项目根目录 /config/
+    return Path(__file__).resolve().parent.parent.parent / "config"
+
+
+def _resolve_project_root(config_dir: str | None = None) -> Path:
+    """项目根目录 = 配置目录的父目录。"""
+    return _resolve_config_dir(config_dir).parent
+
+
+def _load_env(config_dir: str | None = None) -> dict:
     """从 .env 加载环境变量（已存在的不过载）"""
-    env_file = _CONFIG_DIR.parent / ".env"
+    env_file = _resolve_project_root(config_dir) / ".env"
     if not env_file.exists():
         return {}
     env_vars = {}
@@ -60,16 +83,22 @@ def _interpolate_dict(obj):
     return obj
 
 
-def init():
-    """加载所有配置，返回配置字典"""
-    global _config_cache
-    _load_env()
+def init(config_dir: str | None = None):
+    """加载所有配置，返回配置字典
 
+    Args:
+        config_dir: 配置目录路径。默认取 ETF_DATA_CONFIG_DIR 环境变量，
+                    未设置时使用 dev 模式的项目根目录下 config/。
+    """
+    global _config_cache
+    _load_env(config_dir)
+
+    cfg_dir = _resolve_config_dir(config_dir)
     config_files = ["etf_data_config.yaml"]
     merged = {}
 
     for cf in config_files:
-        path = _CONFIG_DIR / cf
+        path = cfg_dir / cf
         if path.exists():
             with open(path) as f:
                 data = yaml.safe_load(f)
@@ -83,7 +112,7 @@ def init():
 def get_config(section: str | None = None):
     """
     获取配置段或全部配置。
-    
+
     section: "database.tushare" | "tushare_api" 等
     """
     if not _config_cache:

@@ -112,7 +112,7 @@ def main():
     symbols = args.symbols.split(",")
     end_date = args.end or datetime.now().strftime("%Y%m%d")
 
-    from etf_data.comparator.diff_engine import DiffEngine
+    from .diff_engine import DiffEngine
 
     engine = DiffEngine()
     print(f"Comparing {len(symbols)} ETFs: {args.start} ~ {end_date}")
@@ -125,3 +125,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

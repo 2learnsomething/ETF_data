@@ -17,9 +17,9 @@ from typing import Any
 import pandas as pd
 import yaml
 
-from etf_data.fetchers.base import BaseFetcher, FetchRequest
-from etf_data.storage.base import BaseStorage
-from etf_data.pipeline.validators import DataValidator, daily_data_validator, basic_info_validator
+from ..fetchers.base import BaseFetcher, FetchRequest
+from ..storage.base import BaseStorage
+from .validators import DataValidator, daily_data_validator, basic_info_validator
 
 logger = logging.getLogger("etf_data.pipeline")
 
@@ -54,32 +54,32 @@ def register_storage(name: str):
 
 def _auto_register():
     try:
-        from etf_data.fetchers.tushare_fetcher import TushareFetcher
+        from ..fetchers.tushare_fetcher import TushareFetcher
         _FETCHER_REGISTRY["tushare"] = TushareFetcher
     except ImportError:
         pass
     try:
-        from etf_data.fetchers.akshare_fetcher import AKShareFetcher
+        from ..fetchers.akshare_fetcher import AKShareFetcher
         _FETCHER_REGISTRY["akshare"] = AKShareFetcher
     except ImportError:
         pass
     try:
-        from etf_data.fetchers.tencent_fetcher import TencentFetcher
+        from ..fetchers.tencent_fetcher import TencentFetcher
         _FETCHER_REGISTRY["tencent"] = TencentFetcher
     except ImportError:
         pass
     try:
-        from etf_data.fetchers.akshare_extra_fetcher import AKShareExtraFetcher
+        from ..fetchers.akshare_extra_fetcher import AKShareExtraFetcher
         _FETCHER_REGISTRY["akshare_extra"] = AKShareExtraFetcher
     except ImportError:
         pass
     try:
-        from etf_data.storage.sqlserver_storage import SQLServerStorage
+        from ..storage.sqlserver_storage import SQLServerStorage
         _STORAGE_REGISTRY["sqlserver"] = SQLServerStorage
     except ImportError:
         pass
     try:
-        from etf_data.storage.parquet_storage import ParquetStorage
+        from ..storage.parquet_storage import ParquetStorage
         _STORAGE_REGISTRY["parquet"] = ParquetStorage
     except ImportError:
         pass
@@ -326,15 +326,15 @@ class DataPipeline:
         if isinstance(spec, dict):
             rules = []
             if "required" in spec:
-                from etf_data.pipeline.validators import validate_required_columns
+                from .validators import validate_required_columns
                 _keys = spec["required"]
                 rules.append(lambda df, r, keys=_keys: validate_required_columns(df, keys, r))
             if "dedup_keys" in spec:
-                from etf_data.pipeline.validators import deduplicate
+                from .validators import deduplicate
                 _keys = spec["dedup_keys"]
                 rules.append(lambda df, r, keys=_keys: deduplicate(df, r, keys=keys))
             if "ranges" in spec:
-                from etf_data.pipeline.validators import validate_numeric_ranges
+                from .validators import validate_numeric_ranges
                 _ranges = spec["ranges"]
                 rules.append(lambda df, r, ranges=_ranges: validate_numeric_ranges(df, ranges, r))
             return DataValidator(rules)
@@ -385,3 +385,4 @@ class DataPipeline:
             if r.get("validation"):
                 line += f" | {r['validation']}"
             logger.info(line)
+

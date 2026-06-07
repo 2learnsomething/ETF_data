@@ -47,7 +47,7 @@ def setup_logging(log_dir: str = "logs") -> None:
 def send_notification(summary: str) -> None:
     """通过 Server酱 推送通知"""
     try:
-        from etf_data.pipeline.notify import _send_serverchan
+        from ..pipeline.notify import _send_serverchan
         _send_serverchan([
             f"## ETF Data Daily Update",
             f"**{summary}**",
@@ -67,14 +67,14 @@ def main():
 
     # 交易日检查
     if not args.force:
-        from etf_data.utils.calendar import get_calendar
+        from ..utils.calendar import get_calendar
         cal = get_calendar()
         if not cal.is_trading_day():
             logger.info(f"Today ({date.today()}) is not a trading day. Skipping.")
             return
 
-    from etf_data.utils.config_helper import init
-    from etf_data.pipeline import DataPipeline
+    from ..utils.config_helper import init
+    from ..pipeline import DataPipeline
 
     init()
 
@@ -112,3 +112,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

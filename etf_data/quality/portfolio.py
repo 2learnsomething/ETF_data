@@ -133,7 +133,7 @@ def main():
     parser.add_argument("--output", "-o", help="输出文件路径")
     args = parser.parse_args()
 
-    from etf_data.utils.config_helper import init, get_db_conn_str
+    from ..utils.config_helper import init, get_db_conn_str
     init()
     import pyodbc
     conn = pyodbc.connect(get_db_conn_str("tushare"))
@@ -147,3 +147,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

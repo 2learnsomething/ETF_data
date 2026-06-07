@@ -66,8 +66,12 @@ class Config:
         """按优先级加载配置：默认值 ← YAML ← 环境变量"""
         self._data = dict(DEFAULT_CONFIG)
 
-        # 项目根目录
-        root = Path(__file__).parent.parent.parent
+        # 项目根目录：ETF_DATA_CONFIG_DIR 环境变量 > dev 模式
+        cfg_dir = os.environ.get("ETF_DATA_CONFIG_DIR")
+        if cfg_dir:
+            root = Path(cfg_dir).parent
+        else:
+            root = Path(__file__).parent.parent.parent
 
         # 加载 YAML 配置
         yaml_path = root / "config" / "amazingdata_pipeline.yaml"

@@ -22,7 +22,7 @@ sys.path.insert(0, str(_project_root))
 
 def build_dashboard(output_path: str) -> str:
     """生成 HTML 看板"""
-    from etf_data.utils.config_helper import init, get_db_conn_str
+    from ..utils.config_helper import init, get_db_conn_str
     init()
     import pyodbc
     conn = pyodbc.connect(get_db_conn_str("tushare"))
@@ -130,3 +130,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -73,8 +73,8 @@ def run_pipeline(
     notify: bool = False,
 ) -> dict:
     """运行数据管道，返回汇总结果。"""
-    from etf_data.utils.config_helper import init
-    from etf_data.pipeline import DataPipeline
+    from ..utils.config_helper import init
+    from . import DataPipeline
 
     init()
 
@@ -112,7 +112,7 @@ def run_pipeline(
 
     if notify:
         try:
-            from etf_data.pipeline.notify import send_pipeline_report
+            from .notify import send_pipeline_report
             send_pipeline_report(results, dry_run=dry_run)
         except Exception as e:
             logging.getLogger("etf_data.pipeline").warning(f"Notification failed: {e}")
@@ -154,7 +154,7 @@ def main():
 
     # 后处理：数据质量 + 三方比对 + 看板
     try:
-        from etf_data.pipeline.post_pipeline import run_all
+        from .post_pipeline import run_all
         reports = run_all()
         for name, path in reports.items():
             if path:
@@ -165,3 +165,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

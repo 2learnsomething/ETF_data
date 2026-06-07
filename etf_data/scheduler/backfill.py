@@ -46,7 +46,7 @@ def setup_logging(log_dir: str = "logs") -> None:
 def send_notification(results: dict) -> None:
     """通过 Server酱 推送通知"""
     try:
-        from etf_data.pipeline.notify import send_pipeline_report
+        from ..pipeline.notify import send_pipeline_report
         send_pipeline_report(results.get("results", []), dry_run=False)
     except Exception as e:
         logging.getLogger("etf_data.pipeline").warning(f"Notification failed: {e}")
@@ -63,8 +63,8 @@ def main():
     setup_logging(log_dir=args.log_dir)
     logger = logging.getLogger("etf_data.pipeline")
 
-    from etf_data.utils.config_helper import init
-    from etf_data.pipeline import DataPipeline
+    from ..utils.config_helper import init
+    from ..pipeline import DataPipeline
 
     init()
 
@@ -114,3 +114,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

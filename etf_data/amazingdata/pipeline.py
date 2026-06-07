@@ -17,10 +17,10 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from etf_data.amazingdata.client import AmazingDataClient
-from etf_data.amazingdata.config import Config
-from etf_data.amazingdata.fetcher import UnifiedFetcher
-from etf_data.amazingdata.storage import ParquetStore, MetaStore
+from .client import AmazingDataClient
+from .config import Config
+from .fetcher import UnifiedFetcher
+from .storage import ParquetStore, MetaStore
 
 logger = logging.getLogger("amazingdata.pipeline")
 
@@ -538,3 +538,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

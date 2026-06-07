@@ -232,7 +232,7 @@ def main():
 
     setup_logging()
 
-    from etf_data.utils.config_helper import init, get_db_conn_str
+    from ..utils.config_helper import init, get_db_conn_str
     init()
     import pyodbc
     conn = pyodbc.connect(get_db_conn_str("tushare"))
@@ -258,7 +258,7 @@ def main():
     if args.notify:
         warn_count = sum(1 for r in results if r["status"] != "ok")
         if warn_count > 0:
-            from etf_data.pipeline.notify import _send_serverchan
+            from ..pipeline.notify import _send_serverchan
             lines = [
                 f"## ETF Data Quality ⚠️",
                 f"**{warn_count} 条告警** — {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -271,3 +271,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

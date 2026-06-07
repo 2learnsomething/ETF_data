@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from etf_data.amazingdata.storage import ParquetStore, MetaStore
+from ..amazingdata.storage import ParquetStore, MetaStore
 
 logger = logging.getLogger(__name__)
 
@@ -243,3 +243,4 @@ class AmazingDataBridge:
             return df
 
         return pd.DataFrame(columns=["code", "pre_close", "high_limited", "low_limited", "price_tick"])
+

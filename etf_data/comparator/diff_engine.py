@@ -27,10 +27,10 @@ class DiffEngine:
 
     def compare_etf(self, symbol: str, start_date: str, end_date: str) -> pd.DataFrame:
         """三方比对单只 ETF"""
-        from etf_data.fetchers.tushare_fetcher import TushareFetcher
-        from etf_data.fetchers.akshare_fetcher import AKShareFetcher
-        from etf_data.fetchers.tencent_fetcher import TencentFetcher
-        from etf_data.fetchers.base import FetchRequest
+        from ..fetchers.tushare_fetcher import TushareFetcher
+        from ..fetchers.akshare_fetcher import AKShareFetcher
+        from ..fetchers.tencent_fetcher import TencentFetcher
+        from ..fetchers.base import FetchRequest
 
         ts, ak, tc = TushareFetcher(), AKShareFetcher(), TencentFetcher()
         if ts._pro is None:
@@ -141,3 +141,4 @@ class DiffEngine:
                         "rel_diff": round(rel, 6), "threshold": th,
                     })
         return pd.DataFrame(diffs)
+
