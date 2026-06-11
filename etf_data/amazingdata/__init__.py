@@ -12,16 +12,9 @@ from .fetcher import UnifiedFetcher
 from .storage import ParquetStore, MetaStore
 
 
-def get_client(*args, **kwargs):
-    """延迟导入 AmazingDataClient（避免依赖缺失时炸裂）。"""
-    from .client import AmazingDataClient
-    return AmazingDataClient(*args, **kwargs)
-
-
 __all__ = [
     "Config",
     "UnifiedFetcher",
     "ParquetStore",
     "MetaStore",
-    "get_client",
 ]

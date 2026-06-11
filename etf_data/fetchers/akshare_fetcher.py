@@ -7,6 +7,7 @@ AKShare 数据源适配器（东方财富，免费稳定）
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 import time
 from typing import Optional
@@ -14,6 +15,8 @@ from typing import Optional
 import pandas as pd
 
 from .base import BaseFetcher, FetchRequest, FetchResult
+
+logger = logging.getLogger("etf_data.fetcher.akshare")
 
 
 class AKShareFetcher(BaseFetcher):
@@ -201,9 +204,9 @@ class AKShareFetcher(BaseFetcher):
             if result.returncode == 0 and result.stdout.strip():
                 return json.loads(result.stdout)
             if result.stderr:
-                print(f"  [curl] {url[:80]}: {result.stderr[:100]}")
+                logger.warning(f"  [curl] {url[:80]}: {result.stderr[:100]}")
         except Exception as e:
-            print(f"  [curl] {url[:80]}: {e}")
+            logger.warning(f"  [curl] {url[:80]}: {e}")
         return None
 
     @staticmethod

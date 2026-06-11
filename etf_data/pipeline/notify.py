@@ -1,13 +1,15 @@
-"""
-通知推送模块
+"""通知推送模块
 
 支持 ServerChan / 企业微信，从 ETF_Rotation_Strategy 复用 WeChatNotifier。
 推送 pipeline 运行结果摘要。
 """
 from __future__ import annotations
 
+import logging
 import sys
 from datetime import datetime
+
+logger = logging.getLogger("etf_data.pipeline.notify")
 
 # 复用 ETF_Rotation_Strategy 的通知模块
 sys.path.insert(0, "/home/fangyao_xu/ETF_Rotation_Strategy")
@@ -33,7 +35,7 @@ def send_pipeline_report(results: list[dict], dry_run: bool = False) -> bool:
     if dry_run:
         title += " [DRY-RUN]"
     if fail > 0:
-        title += f" ⚠️ {fail} failed"
+        title += f" {fail} failed"
 
     lines = [
         f"## {title}",
@@ -43,10 +45,10 @@ def send_pipeline_report(results: list[dict], dry_run: bool = False) -> bool:
     ]
 
     for r in results:
-        status = "✓" if r["status"] == "ok" else "✗"
-        line = f"- {status} **{r['task']}**: {r.get('rows_written', 0):,} rows ({r['elapsed']}s)"
+        status = "OK" if r["status"] == "ok" else "FAIL"
+        line = f"- {status} {r['task']}: {r.get('rows_written', 0):,} rows ({r['elapsed']}s)"
         if r.get("error"):
-            line += f" — `{r['error'][:80]}`"
+            line += f" — {r['error'][:80]}"
         if r.get("validation"):
             line += f" — {r['validation']}"
         lines.append(line)
@@ -57,11 +59,9 @@ def send_pipeline_report(results: list[dict], dry_run: bool = False) -> bool:
         notifier.send_text("\n".join(lines))
         return True
     except ImportError:
-        # Fallback: 用 config 里的 sendkey 推 ServerChan
         return _send_serverchan(lines)
-
     except Exception as e:
-        print(f"[notify] WeChatNotifier failed: {e}")
+        logger.warning(f"WeChatNotifier failed: {e}")
         return _send_serverchan(lines)
 
 
@@ -75,7 +75,7 @@ def _send_serverchan(lines: list[str]) -> bool:
         cfg = get_config("notify")
         sendkey = cfg.get("sendkey", "")
         if not sendkey or sendkey.startswith("${"):
-            print("[notify] no sendkey configured, skip")
+            logger.warning("no sendkey configured, skip")
             return False
 
         title = lines[0].replace("## ", "")
@@ -88,6 +88,5 @@ def _send_serverchan(lines: list[str]) -> bool:
         urllib.request.urlopen(url, data=data, timeout=10)
         return True
     except Exception as e:
-        print(f"[notify] ServerChan failed: {e}")
+        logger.warning(f"ServerChan failed: {e}")
         return False
-
