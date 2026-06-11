@@ -18,7 +18,12 @@ tasks:
   completeness:
     check_gaps: false
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: trade_calendar
+    if_exists: replace
+    keys:
+    - date
+  - type: parquet
     table: trade_calendar
     if_exists: replace
     keys:
@@ -41,7 +46,12 @@ tasks:
   completeness:
     check_gaps: false
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: etf_basic
+    if_exists: replace
+    keys:
+    - symbol
+  - type: parquet
     table: etf_basic
     if_exists: replace
     keys:
@@ -50,42 +60,36 @@ tasks:
   source: amazingdata
   data_type: etf_daily
   symbols:
-  # 宽基
-  - 510050.SH   # 上证50
-  - 510300.SH   # 沪深300
-  - 510500.SH   # 中证500
-  - 510310.SH   # 沪深300ETF易方达
-  - 159919.SZ   # 沪深300ETF
-  - 159915.SZ   # 创业板
-  - 159845.SZ   # 中证1000
-  - 588000.SH   # 科创50
-  - 588080.SH   # 科创50ETF
-  # 行业
-  - 512880.SH   # 证券
-  - 512100.SH   # 医药
-  - 512010.SH   # 消费
-  - 512690.SH   # 酒
-  - 512800.SH   # 银行
-  - 512660.SH   # 军工
-  - 512170.SH   # 医疗
-  - 159995.SZ   # 芯片
-  - 516510.SH   # 云计算
-  - 516160.SH   # 新能源
-  # 债券
-  - 511010.SH   # 国债
-  - 511260.SH   # 10年国债
-  - 511380.SH   # 可转债
-  # 商品
-  - 518880.SH   # 黄金
-  - 159980.SZ   # 有色
-  # 跨境
-  - 513100.SH   # 纳指
-  - 159920.SZ   # 恒生
-  - 513050.SH   # 中概互联
-  - 159941.SZ   # 纳指ETF
-  # 货币
-  - 511880.SH   # 银华日利
-  - 510880.SH   # 红利
+  - 510050.SH
+  - 510300.SH
+  - 510500.SH
+  - 510310.SH
+  - 159919.SZ
+  - 159915.SZ
+  - 159845.SZ
+  - 588000.SH
+  - 588080.SH
+  - 512880.SH
+  - 512100.SH
+  - 512010.SH
+  - 512690.SH
+  - 512800.SH
+  - 512660.SH
+  - 512170.SH
+  - 159995.SZ
+  - 516510.SH
+  - 516160.SH
+  - 511010.SH
+  - 511260.SH
+  - 511380.SH
+  - 518880.SH
+  - 159980.SZ
+  - 513100.SH
+  - 159920.SZ
+  - 513050.SH
+  - 159941.SZ
+  - 511880.SH
+  - 510880.SH
   start_date: '20150101'
   incremental: true
   lookback_days: 5
@@ -102,7 +106,13 @@ tasks:
     pct_change_col: pct_chg
     gap_threshold: 0.11
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: etf_daily
+    if_exists: append
+    keys:
+    - symbol
+    - date
+  - type: parquet
     table: etf_daily
     if_exists: append
     keys:
@@ -159,7 +169,13 @@ tasks:
   completeness:
     check_gaps: false
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: etf_adj_factor
+    if_exists: append
+    keys:
+    - symbol
+    - date
+  - type: parquet
     table: etf_adj_factor
     if_exists: append
     keys:
@@ -216,7 +232,13 @@ tasks:
   completeness:
     check_gaps: false
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: etf_share
+    if_exists: append
+    keys:
+    - symbol
+    - date
+  - type: parquet
     table: etf_share
     if_exists: append
     keys:
@@ -274,7 +296,13 @@ tasks:
   completeness:
     check_gaps: false
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: etf_nav
+    if_exists: append
+    keys:
+    - symbol
+    - date
+  - type: parquet
     table: etf_nav
     if_exists: append
     keys:
@@ -320,13 +348,18 @@ tasks:
     pct_change_col: pct_chg
     gap_threshold: 0.11
   target:
-    type: sqlserver
+  - type: sqlserver
     table: index_daily
     if_exists: append
     keys:
     - symbol
     - date
-# ── 新数据源 ─────────────────────────────────────────
+  - type: parquet
+    table: index_daily
+    if_exists: append
+    keys:
+    - symbol
+    - date
 - name: etf_minute
   source: amazingdata
   data_type: etf_min1
@@ -344,7 +377,10 @@ tasks:
     required: []
     dedup_keys: []
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: etf_minute
+    if_exists: replace
+  - type: parquet
     table: etf_minute
     if_exists: replace
 - name: etf_spot_ths
@@ -357,7 +393,10 @@ tasks:
     required: []
     dedup_keys: []
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: etf_spot_ths
+    if_exists: replace
+  - type: parquet
     table: etf_spot_ths
     if_exists: replace
 - name: etf_scale_sse
@@ -370,7 +409,10 @@ tasks:
     required: []
     dedup_keys: []
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: etf_scale_sse
+    if_exists: replace
+  - type: parquet
     table: etf_scale_sse
     if_exists: replace
 - name: fund_portfolio
@@ -388,8 +430,6 @@ tasks:
   lookback_days: 90
   retry: 3
   retry_delay: 10
-  # 注意: fund_portfolio 返回 ts_code(基金) + symbol(持仓股票),
-  # 需要 transform 避免 normalize_columns 把 ts_code→symbol 冲突
   transform:
   - action: rename
     mapping:
@@ -404,7 +444,14 @@ tasks:
     - date
     - symbol
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: fund_portfolio
+    if_exists: append
+    keys:
+    - fund_code
+    - date
+    - symbol
+  - type: parquet
     table: fund_portfolio
     if_exists: append
     keys:
@@ -427,7 +474,13 @@ tasks:
     - date
     - symbol
   target:
-    type: sqlserver
+  - type: sqlserver
+    table: stk_limit
+    if_exists: append
+    keys:
+    - date
+    - symbol
+  - type: parquet
     table: stk_limit
     if_exists: append
     keys:

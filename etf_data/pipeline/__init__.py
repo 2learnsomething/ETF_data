@@ -168,11 +168,6 @@ class DataPipeline:
 
             # 2. Storage (dry_run 时跳过)
             target = task.get("target", {})
-            storage_type = target.get("type", "sqlserver")
-            storage = None
-            if not self.dry_run and target:
-                storage = shared_storage or self._make_storage(storage_type, target.get("config", {}))
-                storage.connect()
 
             # 3. 计算日期范围（支持增量模式）
             start_date, end_date = self._resolve_dates(task)
@@ -253,22 +248,28 @@ class DataPipeline:
                 if verbose and comp_report:
                     logger.info(f"  completeness: {comp_report}")
 
-            # 8. Write
+            # 8. Write — 支持多目标（SQL Server + Parquet 等）
             n = 0
-            if not self.dry_run and target and storage:
-                table = target.get("table", task["data_type"])
-                if_exists = target.get("if_exists", "append")
-                keys = target.get("keys")
-                n = storage.write(df, table, if_exists=if_exists, keys=keys)
-                if verbose:
-                    logger.info(f"  wrote: {n} rows to {storage_type}::{table}")
+            if not self.dry_run and target:
+                target_list = target if isinstance(target, list) else [target]
+                for tgt in target_list:
+                    tgt_type = tgt.get("type", "sqlserver")
+                    tgt_storage = self._make_storage(tgt_type, tgt.get("config", {}))
+                    tgt_storage.connect()
+                    try:
+                        table = tgt.get("table", task["data_type"])
+                        if_exists = tgt.get("if_exists", "append")
+                        keys = tgt.get("keys")
+                        n_tgt = tgt_storage.write(df, table, if_exists=if_exists, keys=keys)
+                        n += n_tgt
+                        if verbose:
+                            logger.info(f"  wrote: {n_tgt} rows to {tgt_type}::{table}")
+                    finally:
+                        tgt_storage.close()
             elif self.dry_run:
+                tgt_names = [t.get("type", "sqlserver") for t in (target if isinstance(target, list) else [target])] if target else ["parquet"]
                 if verbose:
-                    logger.info(f"  [dry-run] would write {len(df)} rows to {storage_type}::{target.get('table', task['data_type'])}")
-
-            # 9. Cleanup
-            if storage and storage is not shared_storage:
-                storage.close()
+                    logger.info(f"  [dry-run] would write {len(df)} rows to {', '.join(tgt_names)}")
 
             elapsed = time.time() - t0
             res = {

@@ -46,8 +46,10 @@ class BaostockFetcher(BaseFetcher):
             "etf_daily",        # ETF 日线
             "index_daily",      # 指数日线
             "adj_factor",       # 复权因子
+            "fund_adj",         # 复权因子（标准化别名）
+            "etf_adj",          # 复权因子（标准化别名）
+            "etf_adj_factor",   # 复权因子（标准化别名）
             "stock_daily",      # A 股日线
-            "stock_minute",     # A 股分钟线
             "trade_cal",        # 交易日历
         ]
 
@@ -56,11 +58,14 @@ class BaostockFetcher(BaseFetcher):
             self.connect()
 
         method_map = {
-            "etf_daily":    self._fetch_etf_daily,
-            "index_daily":  self._fetch_index_daily,
-            "adj_factor":   self._fetch_adj_factor,
-            "stock_daily":  self._fetch_stock_daily,
-            "trade_cal":    self._fetch_trade_cal,
+            "etf_daily":        self._fetch_etf_daily,
+            "index_daily":      self._fetch_index_daily,
+            "adj_factor":       self._fetch_adj_factor,
+            "fund_adj":         self._fetch_adj_factor,   # 标准化别名
+            "etf_adj":          self._fetch_adj_factor,   # 标准化别名
+            "etf_adj_factor":   self._fetch_adj_factor,   # 标准化别名
+            "stock_daily":      self._fetch_stock_daily,
+            "trade_cal":        self._fetch_trade_cal,
         }
         fn = method_map.get(request.data_type)
         if fn is None:
@@ -205,13 +210,16 @@ class BaostockFetcher(BaseFetcher):
     @staticmethod
     def _to_bs_code(symbol: str) -> str:
         """将标准 symbol (510050.SH) 转为 baostock 格式 (sh.510050)"""
-        code = symbol.split(".")[0]
-        exchange = symbol.split(".")[1].lower()
+        parts = symbol.split(".")
+        if len(parts) < 2:
+            # 没有交易所后缀时默认沪市
+            return f"sh.{parts[0]}"
+        code, exchange = parts[0], parts[1].lower()
         if exchange == "sh":
             return f"sh.{code}"
         elif exchange == "sz":
             return f"sz.{code}"
-        return symbol
+        return f"sh.{code}"
 
     def _rate_wait(self) -> None:
         elapsed = time.monotonic() - self._last_call
