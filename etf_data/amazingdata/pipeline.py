@@ -294,7 +294,7 @@ class Pipeline:
                 batch = sample[i : i + 100]
                 try:
                     result = self._client.get_base_data().get_adj_factor(
-                        batch, local_path="/tmp/ad_cache//", is_local=False
+                        batch, local_path=f"{self._cfg.cache_dir}/", is_local=False
                     )
                     if result is not None:
                         df = pd.DataFrame(result) if not isinstance(result, pd.DataFrame) else result
@@ -317,7 +317,7 @@ class Pipeline:
             sample = codes[:50] if self._cfg.get("pipeline.test_mode", False) else codes
             info = self._client.get_info_data()
             api = getattr(info, api_name)
-            result = api(sample, local_path="/tmp/ad_cache//", is_local=False)
+            result = api(sample, local_path=f"{self._cfg.cache_dir}/", is_local=False)
             if result:
                 import pandas as pd
                 all_frames = []
@@ -344,7 +344,7 @@ class Pipeline:
             sample = codes[:20] if self._cfg.get("pipeline.test_mode", False) else codes[:200]
             info = self._client.get_info_data()
             api = getattr(info, api_name)
-            result = api(sample, local_path="/tmp/ad_cache//", is_local=False)
+            result = api(sample, local_path=f"{self._cfg.cache_dir}/", is_local=False)
             if result:
                 import pandas as pd
                 all_frames = []
@@ -371,7 +371,7 @@ class Pipeline:
             sample = codes[:20] if self._cfg.get("pipeline.test_mode", False) else codes[:500]
             info = self._client.get_info_data()
             api = getattr(info, api_name)
-            result = api(sample, local_path="/tmp/ad_cache//", is_local=False)
+            result = api(sample, local_path=f"{self._cfg.cache_dir}/", is_local=False)
             if result:
                 import pandas as pd
                 all_frames = []
@@ -400,7 +400,7 @@ class Pipeline:
             sample = codes[:20] if self._cfg.get("pipeline.test_mode", False) else codes[:100]
             info = self._client.get_info_data()
             api = getattr(info, api_name)
-            result = api(sample, local_path="/tmp/ad_cache//", is_local=False)
+            result = api(sample, local_path=f"{self._cfg.cache_dir}/", is_local=False)
             if result:
                 import pandas as pd
                 all_frames = []
@@ -425,11 +425,11 @@ class Pipeline:
             api = getattr(info, api_name)
             # 行业基础信息不需要 code_list
             if api_name == "get_industry_base_info":
-                result = api(local_path="/tmp/ad_cache//", is_local=False)
+                result = api(local_path=f"{self._cfg.cache_dir}/", is_local=False)
             else:
                 # 需要传入行业代码
                 import pandas as pd
-                base = info.get_industry_base_info(local_path="/tmp/ad_cache//", is_local=False)
+                base = info.get_industry_base_info(local_path=f"{self._cfg.cache_dir}/", is_local=False)
                 industries = []
                 if isinstance(base, (list, pd.DataFrame)):
                     try:
@@ -441,7 +441,7 @@ class Pipeline:
                 if not industries:
                     logger.warning(f"  {table}: no industry codes available")
                     return 0
-                result = api(industries, local_path="/tmp/ad_cache//", is_local=False)
+                result = api(industries, local_path=f"{self._cfg.cache_dir}/", is_local=False)
 
             if result:
                 all_frames = []
@@ -469,7 +469,7 @@ class Pipeline:
                 security_type="EXTRA_STOCK_A",
                 start_date=20130101,
                 end_date=cal[-1],
-                local_path="/tmp/ad_cache//",
+                local_path=f"{self._cfg.cache_dir}/",
             )
             if result is not None:
                 import pandas as pd

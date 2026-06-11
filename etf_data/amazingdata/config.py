@@ -28,6 +28,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "batch_size_etf_min1": 10,
         "batch_size_a_stock": 100,
         "batch_size_financial": 500,
+        "cache_dir": "/tmp/ad_cache",
         "retry_times": 3,
         "retry_delay": 5,
     },
@@ -143,6 +144,12 @@ class Config:
     @property
     def amazingdata_password(self) -> str:
         return str(self.get("amazingdata.password", ""))
+
+    @property
+    def cache_dir(self) -> str:
+        path = str(self.get("pipeline.cache_dir", "/tmp/ad_cache"))
+        Path(path).mkdir(parents=True, exist_ok=True)
+        return path
 
     @property
     def amazingdata_host(self) -> str:

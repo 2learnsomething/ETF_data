@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 from datetime import date, datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -124,12 +125,15 @@ class Handler(BaseHTTPRequestHandler):
 
             elif path == "/dashboard":
                 import subprocess
+                with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp:
+                    dash_path = tmp.name
                 r = subprocess.run(
-                    [sys.executable, "etf_data/quality/dashboard.py", "-o", "/tmp/dash.html"],
+                    [sys.executable, "etf_data/quality/dashboard.py", "-o", dash_path],
                     capture_output=True, text=True, timeout=30,
                     cwd=str(_project_root),
                 )
-                html = Path("/tmp/dash.html").read_text() if Path("/tmp/dash.html").exists() else "not found"
+                html = Path(dash_path).read_text() if Path(dash_path).exists() else "not found"
+                Path(dash_path).unlink(missing_ok=True)
                 self._send_html(html)
 
             else:
