@@ -7,7 +7,6 @@ AKShare 扩展数据源适配器
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import pandas as pd
 

@@ -12,7 +12,6 @@ from __future__ import annotations
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 
@@ -237,7 +236,7 @@ class MetaStore:
                AND data_date >= date('now', '-? days')""",
             (table_name, days),
         )
-        existing = {row[0] for row in cur.fetchall()}
+        {row[0] for row in cur.fetchall()}
         # 这里需要用交易日历来精确判断
         # 简版实现仅返回 None，留待后续完善
         return []

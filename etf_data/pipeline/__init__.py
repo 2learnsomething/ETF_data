@@ -12,7 +12,6 @@ import time
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 import yaml
@@ -164,7 +163,7 @@ class DataPipeline:
         try:
             # 1. Fetcher
             source = task["source"]
-            fetcher = shared_fetcher or self._make_fetcher(source, task.get("fetcher_config", {}))
+            shared_fetcher or self._make_fetcher(source, task.get("fetcher_config", {}))
 
             # 2. Storage (dry_run 时跳过)
             target = task.get("target", {})

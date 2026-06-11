@@ -10,7 +10,6 @@ import json
 import logging
 import subprocess
 import time
-from typing import Optional
 
 import pandas as pd
 

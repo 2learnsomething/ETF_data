@@ -138,7 +138,7 @@ class TushareFetcher(BaseFetcher):
         """逐个 symbol 拉取后拼接"""
         fn = getattr(self._pro, api_method)
         frames = []
-        n_symbols = len(request.symbols)
+        len(request.symbols)
         for i, sym in enumerate(request.symbols):
             kwargs = self._build_kwargs(request, single_symbol=sym)
 

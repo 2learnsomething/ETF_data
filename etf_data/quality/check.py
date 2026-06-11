@@ -14,10 +14,9 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
-import pandas as pd
 
 _project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(_project_root))

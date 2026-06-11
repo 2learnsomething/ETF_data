@@ -18,7 +18,6 @@ AmazingData 不支持的数据类型（如 etf_share、etf_adj_factor），
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import pandas as pd
 

@@ -138,7 +138,7 @@ def main():
     import pyodbc
     conn = pyodbc.connect(get_db_conn_str("tushare"))
 
-    symbols = args.symbols.split(",") if args.symbols else None
+    args.symbols.split(",") if args.symbols else None
     output = args.output or f"reports/portfolio_{datetime.now().strftime('%Y%m%d')}.md"
 
     generate_report(conn, output)

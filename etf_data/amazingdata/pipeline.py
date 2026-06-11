@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -290,8 +289,7 @@ class Pipeline:
             if not codes:
                 return 0
             sample = codes[:50] if self._cfg.get("pipeline.test_mode", False) else codes
-            import AmazingData as ad
-            ad_inst = self._client.get_ad()
+            self._client.get_ad()
             for i in range(0, len(sample), 100):
                 batch = sample[i : i + 100]
                 try:
