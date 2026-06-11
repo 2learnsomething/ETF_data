@@ -74,6 +74,16 @@ def _auto_register():
     except ImportError:
         pass
     try:
+        from ..fetchers.baostock_fetcher import BaostockFetcher
+        _FETCHER_REGISTRY["baostock"] = BaostockFetcher
+    except ImportError:
+        pass
+    try:
+        from ..fetchers.amazingdata_fetcher import AmazingDataFetcher
+        _FETCHER_REGISTRY["amazingdata"] = AmazingDataFetcher
+    except ImportError:
+        pass
+    try:
         from ..storage.sqlserver_storage import SQLServerStorage
         _STORAGE_REGISTRY["sqlserver"] = SQLServerStorage
     except ImportError:
@@ -167,33 +177,74 @@ class DataPipeline:
             # 3. 计算日期范围（支持增量模式）
             start_date, end_date = self._resolve_dates(task)
 
-            # 4. Fetch
-            request = FetchRequest(
-                data_type=task["data_type"],
-                symbols=task.get("symbols", []),
-                start_date=start_date,
-                end_date=end_date,
-                fields=task.get("fields"),
-                extra=task.get("extra", {}),
-            )
-            result = fetcher.fetch(request)
-            if verbose:
-                logger.info(f"  fetched: {result.metadata.get('row_count', 0)} rows from {source}")
+            # 4. 多源回退链 — 依次尝试 source + fallback_sources
+            fallback_sources = task.get("fallback_sources", [])
+            source_chain = [source] + list(fallback_sources)
 
-            # 5. Transform
-            df = self._maybe_transform(result.df, task.get("transform"))
-
-            # 5b. 列名标准化
-            df = fetcher.normalize_columns(df, task["data_type"])
-
-            # 6. Validate
+            fetch_result = None
+            df = None
             validation_report = None
-            validate_spec = task.get("validate")
-            if validate_spec:
-                validator = self._get_validator(validate_spec)
-                df, validation_report = validator.validate(df)
-                if verbose:
-                    logger.info(f"  validate: {validation_report.summary()}")
+            used_source = source
+
+            for attempt_idx, attempt_source in enumerate(source_chain):
+                if attempt_idx > 0:
+                    logger.warning(f"  ↓ fallback to {attempt_source} (attempt {attempt_idx}/{len(source_chain)-1})")
+
+                try:
+                    attempt_fetcher = self._make_fetcher(attempt_source, task.get("fetcher_config", {}))
+                    attempt_fetcher.connect()
+
+                    request = FetchRequest(
+                        data_type=task["data_type"],
+                        symbols=task.get("symbols", []),
+                        start_date=start_date,
+                        end_date=end_date,
+                        fields=task.get("fields"),
+                        extra=task.get("extra", {}),
+                    )
+                    fetch_result = attempt_fetcher.fetch(request)
+                    attempt_fetcher.close()
+
+                    if fetch_result is None or fetch_result.df is None or fetch_result.df.empty:
+                        logger.warning(f"  {attempt_source}: 0 rows, trying next")
+                        continue
+
+                    # 5. Transform
+                    attempt_df = self._maybe_transform(fetch_result.df, task.get("transform"))
+
+                    # 5b. 列名标准化
+                    attempt_df = attempt_fetcher.normalize_columns(attempt_df, task["data_type"])
+
+                    # 6. Validate
+                    validate_spec = task.get("validate")
+                    if validate_spec:
+                        validator = self._get_validator(validate_spec)
+                        attempt_df, attempt_report = validator.validate(attempt_df)
+                    else:
+                        attempt_report = None
+
+                    # 有数据 → 用当前源的结果
+                    df = attempt_df
+                    validation_report = attempt_report
+                    used_source = attempt_source
+                    if verbose:
+                        logger.info(f"  fetched: {len(df)} rows from {attempt_source}")
+                        if attempt_report:
+                            logger.info(f"  validate: {attempt_report.summary()}")
+                    break
+
+                except Exception as e:
+                    logger.warning(f"  {attempt_source} failed: {e}")
+                    continue
+
+            if df is None or df.empty:
+                logger.error(f"  All sources failed for {task.get('name', task['data_type'])}")
+                return {
+                    "task": task.get("name", task.get("data_type")),
+                    "status": "error",
+                    "error": f"All {len(source_chain)} sources returned empty",
+                    "elapsed": round(time.time() - t0, 2),
+                }
 
             # 7. 数据完整性检查
             completeness_spec = task.get("completeness")
@@ -216,8 +267,6 @@ class DataPipeline:
                     logger.info(f"  [dry-run] would write {len(df)} rows to {storage_type}::{target.get('table', task['data_type'])}")
 
             # 9. Cleanup
-            if fetcher is not shared_fetcher:
-                fetcher.close()
             if storage and storage is not shared_storage:
                 storage.close()
 
@@ -225,10 +274,11 @@ class DataPipeline:
             res = {
                 "task": task.get("name", task["data_type"]),
                 "status": "ok",
-                "rows_fetched": result.metadata.get("row_count", 0),
+                "rows_fetched": len(df),
                 "rows_written": n if not self.dry_run else 0,
                 "dry_run": self.dry_run,
                 "elapsed": round(elapsed, 2),
+                "source_used": used_source,
             }
             if validation_report:
                 res["validation"] = validation_report.summary()

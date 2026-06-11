@@ -27,12 +27,17 @@ _METHOD_MAP: dict[str, str] = {
     "stock_basic":    "stock_basic",
     "daily":          "daily",
     "adj_factor":     "adj_factor",
-    # ETF专题
+    # ETF专题 (标准化名 → tushare API)
     "etf_basic":      "etf_basic",
     "fund_basic":     "fund_basic",
+    "etf_daily":      "fund_daily",
     "fund_daily":     "fund_daily",
+    "etf_adj":        "fund_adj",
+    "etf_adj_factor": "fund_adj",
     "fund_adj":       "fund_adj",
+    "etf_share":      "fund_share",
     "fund_share":     "fund_share",
+    "etf_nav":        "fund_nav",
     "fund_nav":       "fund_nav",
     "fund_mins":      "fund_mins",
     # 指数

@@ -1,11 +1,12 @@
 tasks:
 - name: trade_calendar
-  source: tushare
+  source: amazingdata
   data_type: trade_cal
   symbols: []
   start_date: '20150101'
-  extra:
-    exchange: SSE
+  fallback_sources:
+  - tushare
+  - baostock
   retry: 2
   retry_delay: 5
   validate:
@@ -15,7 +16,7 @@ tasks:
     dedup_keys:
     - date
   completeness:
-    check_gaps: true
+    check_gaps: false
   target:
     type: sqlserver
     table: trade_calendar
@@ -23,11 +24,12 @@ tasks:
     keys:
     - date
 - name: etf_basic
-  source: tushare
+  source: amazingdata
   data_type: etf_basic
   symbols: []
-  extra:
-    list_status: L
+  fallback_sources:
+  - tushare
+  - akshare
   retry: 2
   retry_delay: 5
   validate:
@@ -45,8 +47,8 @@ tasks:
     keys:
     - symbol
 - name: etf_daily
-  source: tushare
-  data_type: fund_daily
+  source: amazingdata
+  data_type: etf_daily
   symbols:
   # 宽基
   - 510050.SH   # 上证50
@@ -87,6 +89,11 @@ tasks:
   start_date: '20150101'
   incremental: true
   lookback_days: 5
+  fallback_sources:
+  - tushare
+  - akshare
+  - tencent
+  - baostock
   retry: 3
   retry_delay: 10
   validate: daily
@@ -104,6 +111,8 @@ tasks:
 - name: etf_adj_factor
   source: tushare
   data_type: fund_adj
+  fallback_sources:
+  - baostock
   symbols:
   - 510050.SH
   - 510300.SH
@@ -159,6 +168,8 @@ tasks:
 - name: etf_share
   source: tushare
   data_type: fund_share
+  fallback_sources:
+  - baostock
   symbols:
   - 510050.SH
   - 510300.SH
@@ -212,8 +223,11 @@ tasks:
     - symbol
     - date
 - name: etf_nav
-  source: tushare
-  data_type: fund_nav
+  source: amazingdata
+  data_type: etf_nav
+  fallback_sources:
+  - tushare
+  - akshare
   symbols:
   - 510050.SH
   - 510300.SH
@@ -269,6 +283,9 @@ tasks:
 - name: index_daily
   source: tushare
   data_type: index_daily
+  fallback_sources:
+  - akshare
+  - baostock
   symbols:
   - 000001.SH
   - 000300.SH
@@ -311,8 +328,11 @@ tasks:
     - date
 # ── 新数据源 ─────────────────────────────────────────
 - name: etf_minute
-  source: tencent
-  data_type: etf_minute
+  source: amazingdata
+  data_type: etf_min1
+  fallback_sources:
+  - tencent
+  - baostock
   symbols:
   - 510050.SH
   - 510300.SH

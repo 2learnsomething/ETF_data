@@ -2,12 +2,37 @@
 # ETF 数据源配置 — 行情 / 基本面 / 实时
 # ============================================================
 # 分层:
+#   Tier 0: AmazingData（主源，付费 + 本地 Parquet 缓存兜底）
 #   Tier 1: 免费 + 稳定 (已验证)
 #   Tier 2: 免费有限制 / 需注册
 #   Tier 3: 付费
+#
+# 管线回退链 (按数据维度):
+#   K 线:       AmazingData → Tushare → AKShare(东财) → 腾讯 → Baostock
+#   复权因子:   Tushare → Baostock
+#   净值:       AmazingData → Tushare → AKShare
+#   基本信息:   AmazingData → Tushare → AKShare
+#   交易日历:   AmazingData → Tushare → Baostock
+#   指数日线:   Tushare → AKShare(东财) → Baostock
+#   分钟K线:    AmazingData → 腾讯 → Baostock
 # ============================================================
 
 sources:
+
+  # ── Tier 0: 主源（付费 + 本地缓存） ──────────────────
+  tier0:
+
+    - name: AmazingData
+      type: proprietary_sdk + parquet
+      tier: 0
+      capabilities:
+        - ETF K 线 (日/1分/5分)
+        - ETF 净值
+        - ETF 基本信息
+        - 代码清单
+      auth: 账号密码
+      status: 主源，BSD 管道直连，本地 Parquet 即时重放
+      note: 失败后按 pipeline 的 fallback_sources 链依次降级
 
   # ── Tier 1: 已验证可用的免费源 ──────────────────────
   tier1:
@@ -28,31 +53,46 @@ sources:
         - 交易日历 (trade_cal)
       rate_limit: 200积分/min (免费)
       auth: 需注册 token
-      status: 主力源，服务器不稳需超时60s
+      status: 主力备源，服务器不稳需超时60s
 
-    - name: 新浪财经 (Sina)
-      type: http_api + akshare
-      base_url: https://money.finance.sina.com.cn
+    - name: AKShare 东方财富
+      type: http_api (curl 直连)
+      base_url: push2his.eastmoney.com
       tier: 1
+      response_time: ~76ms
       capabilities:
-        - ETF 日K线 (fund_etf_hist_sina)
-        - ETF 实时行情 (hq.sinajs.cn)
-        - ETF 分类列表 (fund_etf_category_sina)
-        - ETF 分红记录 (fund_etf_dividend_sina)
-      rate_limit: 中等
+        - ETF 日K线 (push2his)
+        - ETF 实时行情 (push2)
+        - 指数日线 (push2his)
+        - ETF 分类 (新浪)
+        - ETF 分红 (新浪)
+      rate_limit: 宽松
       auth: none
-      status: 验证源，与Tushare日线一致性>99%
+      status: 第二备源，curl 子进程绕过 Python SSL 兼容问题
 
     - name: 腾讯财经 (Tencent)
-      type: http_api
+      type: http_api (curl 直连)
       base_url: https://web.ifzq.gtimg.cn
       tier: 1
+      response_time: ~1067ms
       capabilities:
         - ETF 日K线 (前复权)
         - ETF 分时数据 (当日)
       rate_limit: 宽松
       auth: none
-      status: 第三验证源，价格差异约5.5%
+      status: 第三备源，内置自动重试，价格差异约5.5%
+
+    - name: Baostock
+      type: python_lib
+      tier: 1
+      capabilities:
+        - ETF 日K线
+        - 指数日K线
+        - 复权因子
+        - A 股日线/分钟线
+        - 交易日历
+      auth: 免费注册
+      status: 第四备源，底层数据稳定
 
     - name: 同花顺
       type: akshare
@@ -72,36 +112,29 @@ sources:
   # ── Tier 2: 需安装/注册 ─────────────────────────────
   tier2:
 
+    - name: AData
+      type: python_lib
+      capabilities:
+        - ETF K 线
+        - 交易日历
+        - 股票数据
+      auth: 免费注册即可使用
+      status: 免费、稳定，可作为补充备源
+
     - name: Baostock
       type: python_lib
       capabilities:
         - 股票日K线
         - 股票分钟K线
       auth: 免费注册
-      status: A股股票支持好，ETF返回0行
-
-    - name: 聚宽 (JoinQuant)
-      type: jqdatasdk
-      capabilities:
-        - ETF 日K线
-        - ETF 分钟K线
-      auth: 免费100万条/天
-      status: 未测试
-
-    - name: 掘金 (GMQ)
-      type: python_sdk
-      capabilities:
-        - ETF tick
-        - ETF 分钟K线
-      auth: 免费有限制
-      status: 未测试
+      status: 已在 Tier 1 启用
 
     - name: efinance
       type: python_lib
       capabilities:
         - ETF 日K线 (东方财富封装)
       auth: none
-      status: 当前网络不可达(DNS)
+      status: 当前网络不可达(DNS)，在 AmazingData UnifiedFetcher 中作为备源
 
   # ── Tier 3: 付费 ────────────────────────────────────
   tier3:
